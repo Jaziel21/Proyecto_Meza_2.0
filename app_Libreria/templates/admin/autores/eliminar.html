@@ -1,0 +1,498 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="card">
+        <div class="card-header">
+            <h3>Eliminar Autor</h3>
+        </div>
+        <div class="card-body">
+            <div class="alert warning-alert">
+                <h4>¿Estás seguro de que quieres eliminar al autor?</h4>
+                <p><strong>Nombre:</strong> {{ autor.nombre }} {{ autor.apellido }}</p>
+                <p><strong>Nacionalidad:</strong> {{ autor.nacionalidad }}</p>
+                <p>Esta acción no se puede deshacer y afectará a todos los libros asociados a este autor.</p>
+            </div>
+            
+            <form method="post" id="deleteForm">
+                {% csrf_token %}
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-danger">Sí, eliminar autor</button>
+                    <a href="{% url 'admin_autores' %}" class="btn btn-secondary">Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Estilos específicos para página de eliminación */
+.container {
+    width: 90%;
+    max-width: 700px;
+    margin: 40px auto;
+    padding: 20px;
+}
+
+/* Card */
+.card {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+    overflow: hidden;
+    border: 1px solid #e9ecef;
+    animation: slideUp 0.5s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.card-header {
+    background: linear-gradient(135deg, #dc3545 0%, #e53935 100%);
+    padding: 25px 30px;
+    color: white;
+    position: relative;
+    overflow: hidden;
+}
+
+.card-header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 100%;
+    height: 200%;
+    background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+    animation: shine 3s infinite linear;
+    transform: rotate(30deg);
+}
+
+@keyframes shine {
+    0% { transform: translateX(-100%) rotate(30deg); }
+    100% { transform: translateX(100%) rotate(30deg); }
+}
+
+.card-header h3 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    position: relative;
+    z-index: 1;
+}
+
+.card-body {
+    padding: 40px;
+}
+
+/* Alert de advertencia */
+.warning-alert {
+    background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
+    border: 2px solid #ffb300;
+    border-radius: 8px;
+    padding: 25px;
+    margin-bottom: 30px;
+    position: relative;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(255, 179, 0, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(255, 179, 0, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 179, 0, 0); }
+}
+
+.warning-alert h4 {
+    color: #e65100;
+    margin: 0 0 20px 0;
+    font-size: 1.3rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.warning-alert h4::before {
+    content: '⚠️';
+    font-size: 1.5rem;
+}
+
+.warning-alert p {
+    margin: 12px 0;
+    color: #5d4037;
+    line-height: 1.6;
+}
+
+.warning-alert p strong {
+    color: #e65100;
+    font-weight: 600;
+}
+
+/* Autor info destacada */
+.warning-alert p:nth-child(2),
+.warning-alert p:nth-child(3) {
+    background: white;
+    padding: 15px;
+    border-radius: 6px;
+    border-left: 4px solid #dc3545;
+    margin: 15px 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Botones */
+.form-actions {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.btn {
+    padding: 16px 32px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 1rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    min-width: 200px;
+    position: relative;
+    overflow: hidden;
+    letter-spacing: 0.5px;
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    transition: left 0.7s;
+}
+
+.btn:hover::before {
+    left: 100%;
+}
+
+.btn:active {
+    transform: scale(0.98);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #dc3545 0%, #c62828 100%);
+    color: white;
+    box-shadow: 0 6px 15px rgba(220, 53, 69, 0.3);
+}
+
+.btn-danger:hover {
+    background: linear-gradient(135deg, #c82333 0%, #b71c1c 100%);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(220, 53, 69, 0.4);
+}
+
+.btn-secondary {
+    background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+    color: white;
+    box-shadow: 0 6px 15px rgba(108, 117, 125, 0.3);
+}
+
+.btn-secondary:hover {
+    background: linear-gradient(135deg, #5a6268 0%, #343a40 100%);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(108, 117, 125, 0.4);
+}
+
+/* Efecto de confirmación adicional */
+.confirmation-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.confirmation-box {
+    background: white;
+    padding: 40px;
+    border-radius: 12px;
+    max-width: 500px;
+    width: 90%;
+    animation: scaleIn 0.3s ease-out;
+    text-align: center;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.confirmation-box h4 {
+    color: #dc3545;
+    margin-bottom: 20px;
+    font-size: 1.4rem;
+}
+
+.confirmation-actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 30px;
+    justify-content: center;
+}
+
+.confirmation-actions .btn {
+    min-width: 120px;
+    padding: 12px 24px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .container {
+        padding: 15px;
+    }
+    
+    .card-body {
+        padding: 30px 25px;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .btn {
+        width: 100%;
+        min-width: auto;
+    }
+    
+    .card-header {
+        padding: 20px;
+    }
+    
+    .card-header h3 {
+        font-size: 1.3rem;
+    }
+    
+    .warning-alert {
+        padding: 20px;
+    }
+    
+    .warning-alert h4 {
+        font-size: 1.2rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .card-body {
+        padding: 25px 20px;
+    }
+    
+    .card-header {
+        padding: 18px;
+    }
+    
+    .warning-alert {
+        padding: 18px;
+    }
+    
+    .btn {
+        padding: 14px 28px;
+        font-size: 0.95rem;
+    }
+}
+
+/* Animación de advertencia en el botón eliminar */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+.btn-danger.shaking {
+    animation: shake 0.5s;
+}
+
+/* Iconos en botones */
+.btn::after {
+    margin-left: 8px;
+    font-size: 1.1rem;
+}
+
+.btn-danger::after {
+    content: '🗑️';
+}
+
+.btn-secondary::after {
+    content: '↩️';
+}
+
+/* Contador regresivo */
+.countdown {
+    display: inline-block;
+    margin-left: 10px;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    min-width: 40px;
+    text-align: center;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const deleteBtn = document.querySelector('.btn-danger');
+    const cancelBtn = document.querySelector('.btn-secondary');
+    const form = document.getElementById('deleteForm');
+    
+    // Mostrar overlay de confirmación adicional
+    deleteBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        // Crear overlay de confirmación
+        const overlay = document.createElement('div');
+        overlay.className = 'confirmation-overlay';
+        overlay.innerHTML = `
+            <div class="confirmation-box">
+                <h4>⚠️ Confirmación Final</h4>
+                <p>¿Realmente quieres eliminar al autor <strong>"{{ autor.nombre }} {{ autor.apellido }}"</strong>?</p>
+                <p style="color: #dc3545; font-size: 0.9rem; margin-top: 10px;">
+                    Esta acción eliminará permanentemente el autor y puede afectar los libros asociados.
+                </p>
+                <div class="confirmation-actions">
+                    <button type="button" id="finalConfirm" class="btn btn-danger">Sí, eliminar definitivamente</button>
+                    <button type="button" id="cancelConfirm" class="btn btn-secondary">No, cancelar</button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(overlay);
+        overlay.style.display = 'flex';
+        
+        // Confirmación final
+        document.getElementById('finalConfirm').addEventListener('click', function() {
+            form.submit();
+        });
+        
+        // Cancelar
+        document.getElementById('cancelConfirm').addEventListener('click', function() {
+            document.body.removeChild(overlay);
+        });
+        
+        // Cerrar al hacer clic fuera
+        overlay.addEventListener('click', function(e) {
+            if (e.target === overlay) {
+                document.body.removeChild(overlay);
+            }
+        });
+    });
+    
+    // Efecto de vibración en el botón eliminar al pasar el mouse
+    deleteBtn.addEventListener('mouseenter', function() {
+        this.classList.add('shaking');
+        setTimeout(() => this.classList.remove('shaking'), 500);
+    });
+    
+    // Contador regresivo para el botón eliminar
+    let countdown = 3;
+    deleteBtn.addEventListener('mouseenter', function() {
+        // Crear elemento de contador
+        const countdownEl = document.createElement('span');
+        countdownEl.className = 'countdown';
+        countdownEl.textContent = countdown;
+        this.appendChild(countdownEl);
+        
+        // Iniciar cuenta regresiva
+        const interval = setInterval(() => {
+            countdown--;
+            countdownEl.textContent = countdown;
+            
+            if (countdown <= 0) {
+                clearInterval(interval);
+                countdownEl.textContent = '¡Ahora!';
+                countdownEl.style.background = '#28a745';
+            }
+        }, 1000);
+        
+        // Limpiar cuando sale del botón
+        deleteBtn.addEventListener('mouseleave', function() {
+            clearInterval(interval);
+            if (countdownEl.parentNode) {
+                countdownEl.remove();
+            }
+            countdown = 3;
+        }, { once: true });
+    });
+    
+    // Efecto en botón cancelar
+    cancelBtn.addEventListener('mouseenter', function() {
+        this.style.transform = 'translateX(-5px)';
+    });
+    
+    cancelBtn.addEventListener('mouseleave', function() {
+        this.style.transform = 'translateX(0)';
+    });
+    
+    // Prevenir envío accidental con tecla Enter
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && document.activeElement !== deleteBtn) {
+            e.preventDefault();
+        }
+    });
+    
+    // Efecto de escritura para el título
+    const title = document.querySelector('.card-header h3');
+    const originalText = title.textContent;
+    title.textContent = '';
+    
+    let charIndex = 0;
+    const typeWriter = () => {
+        if (charIndex < originalText.length) {
+            title.textContent += originalText.charAt(charIndex);
+            charIndex++;
+            setTimeout(typeWriter, 50);
+        }
+    };
+    
+    // Iniciar efecto de escritura después de un breve delay
+    setTimeout(typeWriter, 300);
+    
+    // Efecto de parpadeo en el alert
+    const warningAlert = document.querySelector('.warning-alert');
+    setInterval(() => {
+        warningAlert.style.borderColor = warningAlert.style.borderColor === '#ffb300' ? '#e65100' : '#ffb300';
+    }, 1000);
+    
+    // Mostrar información del autor en consola (solo para depuración)
+    console.log(`⚠️ Intentando eliminar autor: {{ autor.nombre }} {{ autor.apellido }}`);
+});
+</script>
+{% endblock %}

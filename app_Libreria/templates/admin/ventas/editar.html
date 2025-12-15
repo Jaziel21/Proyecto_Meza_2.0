@@ -1,0 +1,930 @@
+<!-- app_Libreria/templates/admin/ventas/editar.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="admin-container">
+    <h1 class="page-title">Editar Venta #{{ venta.ventaid }}</h1>
+    
+    <div class="card">
+        <div class="card-content">
+            <form method="post" class="venta-edit-form">
+                {% csrf_token %}
+                
+                <div class="form-grid">
+                    <div class="form-column">
+                        <div class="form-group">
+                            <label class="form-label">Cliente *</label>
+                            <select class="form-select" name="clienteid" required id="clienteSelect">
+                                <option value="">Seleccionar cliente</option>
+                                {% for cliente in clientes %}
+                                <option value="{{ cliente.id }}" 
+                                        {% if cliente.id == venta.clienteid.id %}selected{% endif %}
+                                        data-username="{{ cliente.username }}">
+                                    {{ cliente.username }}
+                                    {% if cliente.first_name or cliente.last_name %}
+                                    - {{ cliente.first_name }} {{ cliente.last_name }}
+                                    {% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Método de Pago *</label>
+                            <select class="form-select" name="metodopago" required id="metodoPago">
+                                <option value="EFECTIVO" {% if venta.metodopago == 'EFECTIVO' %}selected{% endif %}>Efectivo</option>
+                                <option value="TARJETA" {% if venta.metodopago == 'TARJETA' %}selected{% endif %}>Tarjeta</option>
+                                <option value="TRANSFERENCIA" {% if venta.metodopago == 'TRANSFERENCIA' %}selected{% endif %}>Transferencia</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Estado de Venta</label>
+                            <select class="form-select" name="estadoventa" id="estadoVenta">
+                                <option value="PENDIENTE" {% if venta.estadoventa == 'PENDIENTE' %}selected{% endif %}>Pendiente</option>
+                                <option value="COMPLETADA" {% if venta.estadoventa == 'COMPLETADA' %}selected{% endif %}>Completada</option>
+                                <option value="CANCELADA" {% if venta.estadoventa == 'CANCELADA' %}selected{% endif %}>Cancelada</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-column">
+                        <div class="form-group">
+                            <label class="form-label">Monto Total *</label>
+                            <input type="number" step="0.01" class="form-input" 
+                                   name="montototal" value="{{ venta.montototal }}" 
+                                   required id="montoTotal">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Descuento Aplicado</label>
+                            <input type="number" step="0.01" class="form-input" 
+                                   name="descuentoaplicado" value="{{ venta.descuentoaplicado|default:0 }}" 
+                                   id="descuento">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Pago Recibido</label>
+                            <input type="number" step="0.01" class="form-input" 
+                                   name="pagorecibido" value="{{ venta.pagorecibido|default:0 }}" 
+                                   id="pagoRecibido">
+                            <small class="form-hint" id="pagoHint">
+                                Para pago en efectivo, ingrese la cantidad recibida
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Resumen de cambios -->
+                <div class="change-summary" id="changeSummary" style="display: none;">
+                    <div class="section-card">
+                        <div class="section-header section-info">
+                            <span class="section-icon">📊</span>
+                            <h3>Resumen de Cambios</h3>
+                        </div>
+                        <div class="section-content">
+                            <div class="change-grid">
+                                <div class="change-item">
+                                    <div class="change-label">Cliente:</div>
+                                    <div class="change-value" id="changeCliente"></div>
+                                </div>
+                                <div class="change-item">
+                                    <div class="change-label">Método Pago:</div>
+                                    <div class="change-value" id="changeMetodo"></div>
+                                </div>
+                                <div class="change-item">
+                                    <div class="change-label">Estado:</div>
+                                    <div class="change-value" id="changeEstado"></div>
+                                </div>
+                                <div class="change-item">
+                                    <div class="change-label">Monto Total:</div>
+                                    <div class="change-value" id="changeMonto"></div>
+                                </div>
+                                <div class="change-item">
+                                    <div class="change-label">Descuento:</div>
+                                    <div class="change-value" id="changeDescuento"></div>
+                                </div>
+                                <div class="change-item">
+                                    <div class="change-label">Pago Recibido:</div>
+                                    <div class="change-value" id="changePago"></div>
+                                </div>
+                                {% if venta.metodopago == 'EFECTIVO' %}
+                                <div class="change-item" id="changeCambioItem">
+                                    <div class="change-label">Cambio:</div>
+                                    <div class="change-value" id="changeCambio"></div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                        <span class="btn-icon">💾</span> Actualizar Venta
+                    </button>
+                    <a href="{% url 'admin_ventas' %}" class="btn btn-secondary">
+                        <span class="btn-icon">❌</span> Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Variables CSS */
+:root {
+    --verde-principal: #2e8b57;
+    --verde-claro: rgba(46, 139, 87, 0.1);
+    --blanco: #ffffff;
+    --gris-claro: #f8f9fa;
+    --gris-medio: #e9ecef;
+    --gris-oscuro: #343a40;
+    --texto: #212529;
+    --texto-secundario: #6c757d;
+    --primario: #2e8b57;
+    --secundario: #28a745;
+    --peligro: #dc3545;
+    --advertencia: #ffc107;
+    --info: #17a2b8;
+    --sombra: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --sombra-hover: 0 4px 8px rgba(0, 0, 0, 0.15);
+    --radio-borde: 8px;
+    --radio-input: 6px;
+}
+
+/* Contenedor principal */
+.admin-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.page-title {
+    color: var(--verde-principal);
+    font-size: 28px;
+    margin-bottom: 25px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--verde-claro);
+}
+
+/* Card */
+.card {
+    background: var(--blanco);
+    border-radius: var(--radio-borde);
+    box-shadow: var(--sombra);
+    overflow: hidden;
+}
+
+.card-content {
+    padding: 30px;
+}
+
+/* Formulario */
+.venta-edit-form {
+    max-width: 100%;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 25px;
+    margin-bottom: 25px;
+}
+
+.form-column {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-label {
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--texto);
+    font-size: 15px;
+}
+
+.form-label:after {
+    content: ' *';
+    color: var(--peligro);
+}
+
+.form-input,
+.form-select {
+    padding: 12px 15px;
+    border: 2px solid var(--gris-medio);
+    border-radius: var(--radio-input);
+    font-size: 15px;
+    transition: all 0.3s ease;
+    background-color: var(--blanco);
+}
+
+.form-input:focus,
+.form-select:focus {
+    outline: none;
+    border-color: var(--verde-principal);
+    box-shadow: 0 0 0 3px rgba(46, 139, 87, 0.1);
+}
+
+.form-select {
+    appearance: none;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="%23212529" viewBox="0 0 16 16"><path d="M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z"/></svg>');
+    background-repeat: no-repeat;
+    background-position: right 15px center;
+    background-size: 12px;
+    cursor: pointer;
+    padding-right: 40px;
+}
+
+.form-hint {
+    display: block;
+    margin-top: 6px;
+    color: var(--texto-secundario);
+    font-size: 13px;
+}
+
+/* Resumen de cambios */
+.change-summary {
+    margin: 25px 0;
+    animation: slideIn 0.5s ease;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.section-card {
+    background: var(--blanco);
+    border-radius: var(--radio-borde);
+    border: 2px solid var(--gris-medio);
+    overflow: hidden;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 18px 25px;
+    background-color: var(--gris-claro);
+    border-bottom: 2px solid var(--gris-medio);
+}
+
+.section-header.section-info {
+    background-color: #d1ecf1;
+    border-bottom-color: #bee5eb;
+}
+
+.section-icon {
+    font-size: 20px;
+}
+
+.section-header h3 {
+    margin: 0;
+    font-size: 18px;
+    color: var(--texto);
+}
+
+.section-content {
+    padding: 25px;
+}
+
+.change-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+}
+
+.change-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    background-color: var(--gris-claro);
+    border-radius: var(--radio-input);
+    border: 1px solid var(--gris-medio);
+}
+
+.change-label {
+    font-weight: 600;
+    color: var(--texto);
+    font-size: 14px;
+}
+
+.change-value {
+    font-weight: 500;
+    color: var(--texto);
+    text-align: right;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.change-new {
+    color: var(--primario);
+    font-weight: 600;
+}
+
+.change-old {
+    color: var(--texto-secundario);
+    text-decoration: line-through;
+    font-size: 13px;
+    display: block;
+}
+
+/* Botones */
+.form-actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 30px;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 14px 28px;
+    border-radius: var(--radio-input);
+    text-decoration: none;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.3s ease;
+    font-size: 16px;
+    gap: 10px;
+    flex: 1;
+    justify-content: center;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primario), #3cb371);
+    color: white;
+    box-shadow: 0 4px 6px rgba(46, 139, 87, 0.2);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #247449, #2e8b57);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(46, 139, 87, 0.3);
+}
+
+.btn-secondary {
+    background: linear-gradient(135deg, var(--gris-medio), #dae0e5);
+    color: var(--texto);
+}
+
+.btn-secondary:hover {
+    background: linear-gradient(135deg, var(--gris-oscuro), #495057);
+    color: var(--blanco);
+    transform: translateY(-3px);
+}
+
+.btn-icon {
+    font-size: 18px;
+}
+
+/* Validación visual */
+.form-input:invalid:not(:focus):not(:placeholder-shown),
+.form-select:invalid:not(:focus) {
+    border-color: var(--peligro);
+    background-color: rgba(220, 53, 69, 0.05);
+}
+
+/* Modal de advertencia */
+.warning-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.3s ease;
+}
+
+.warning-dialog {
+    background: var(--blanco);
+    border-radius: var(--radio-borde);
+    padding: 40px;
+    max-width: 500px;
+    width: 90%;
+    text-align: center;
+    animation: scaleIn 0.3s ease;
+    box-shadow: var(--sombra-hover);
+}
+
+.warning-icon {
+    font-size: 64px;
+    margin-bottom: 20px;
+    color: var(--advertencia);
+}
+
+.warning-title {
+    color: var(--texto);
+    margin-bottom: 15px;
+    font-size: 20px;
+}
+
+.warning-message {
+    color: var(--texto-secundario);
+    margin-bottom: 30px;
+    line-height: 1.6;
+    font-size: 15px;
+    white-space: pre-line;
+}
+
+.warning-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+.warning-btn {
+    padding: 12px 30px;
+    border-radius: var(--radio-input);
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.3s ease;
+    font-size: 16px;
+    min-width: 120px;
+}
+
+.warning-btn-primary {
+    background: linear-gradient(135deg, var(--advertencia), #f0ad4e);
+    color: #212529;
+}
+
+.warning-btn-primary:hover {
+    background: linear-gradient(135deg, #f0ad4e, #eea236);
+    transform: translateY(-2px);
+}
+
+.warning-btn-secondary {
+    background: linear-gradient(135deg, var(--gris-medio), #dae0e5);
+    color: var(--texto);
+}
+
+.warning-btn-secondary:hover {
+    background: linear-gradient(135deg, var(--gris-oscuro), #495057);
+    color: var(--blanco);
+    transform: translateY(-2px);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .admin-container {
+        padding: 15px;
+    }
+    
+    .form-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .change-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .btn {
+        width: 100%;
+    }
+    
+    .card-content {
+        padding: 20px;
+    }
+    
+    .section-content {
+        padding: 20px;
+    }
+    
+    .warning-actions {
+        flex-direction: column;
+    }
+    
+    .warning-btn {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .page-title {
+        font-size: 24px;
+    }
+    
+    .section-header {
+        padding: 15px 20px;
+    }
+    
+    .section-header h3 {
+        font-size: 16px;
+    }
+    
+    .form-input,
+    .form-select {
+        padding: 10px 12px;
+        font-size: 16px;
+    }
+    
+    .change-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+    
+    .change-value {
+        text-align: left;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('.venta-edit-form');
+    const clienteSelect = document.getElementById('clienteSelect');
+    const metodoPagoSelect = document.getElementById('metodoPago');
+    const estadoVentaSelect = document.getElementById('estadoVenta');
+    const montoTotalInput = document.getElementById('montoTotal');
+    const descuentoInput = document.getElementById('descuento');
+    const pagoRecibidoInput = document.getElementById('pagoRecibido');
+    const pagoHint = document.getElementById('pagoHint');
+    const changeSummary = document.getElementById('changeSummary');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    // Valores originales
+    const originalValues = {
+        clienteid: '{{ venta.clienteid.id }}',
+        metodopago: '{{ venta.metodopago }}',
+        estadoventa: '{{ venta.estadoventa }}',
+        montototal: parseFloat('{{ venta.montototal }}'),
+        descuentoaplicado: parseFloat('{{ venta.descuentoaplicado|default:0 }}'),
+        pagorecibido: parseFloat('{{ venta.pagorecibido|default:0 }}'),
+        cambio: parseFloat('{{ venta.cambio|default:0 }}')
+    };
+    
+    // Información de debug
+    console.log('📝 Editando venta #{{ venta.ventaid }}', originalValues);
+    
+    // Función para formatear dinero
+    function formatMoney(amount) {
+        return '$' + parseFloat(amount).toFixed(2);
+    }
+    
+    // Función para calcular cambio
+    function calcularCambio() {
+        const metodoPago = metodoPagoSelect.value;
+        const montoTotal = parseFloat(montoTotalInput.value) || 0;
+        const descuento = parseFloat(descuentoInput.value) || 0;
+        const pagoRecibido = parseFloat(pagoRecibidoInput.value) || 0;
+        
+        if (metodoPago === 'EFECTIVO' && pagoRecibido > 0) {
+            const total = montoTotal - descuento;
+            return Math.max(pagoRecibido - total, 0);
+        }
+        return 0;
+    }
+    
+    // Función para actualizar resumen de cambios
+    function actualizarResumen() {
+        const cambios = {};
+        
+        // Cliente
+        const clienteOption = clienteSelect.options[clienteSelect.selectedIndex];
+        const clienteText = clienteOption.text;
+        if (clienteSelect.value !== originalValues.clienteid) {
+            cambios.cliente = {
+                nuevo: clienteText,
+                viejo: '{{ venta.clienteid.username }}'
+            };
+        }
+        
+        // Método de pago
+        const metodoText = metodoPagoSelect.options[metodoPagoSelect.selectedIndex].text;
+        if (metodoPagoSelect.value !== originalValues.metodopago) {
+            cambios.metodo = {
+                nuevo: metodoText,
+                viejo: '{{ venta.get_metodopago_display }}'
+            };
+        }
+        
+        // Estado
+        const estadoText = estadoVentaSelect.options[estadoVentaSelect.selectedIndex].text;
+        if (estadoVentaSelect.value !== originalValues.estadoventa) {
+            cambios.estado = {
+                nuevo: estadoText,
+                viejo: '{{ venta.get_estadoventa_display }}'
+            };
+        }
+        
+        // Monto total
+        const montoTotal = parseFloat(montoTotalInput.value) || 0;
+        if (montoTotal !== originalValues.montototal) {
+            cambios.monto = {
+                nuevo: formatMoney(montoTotal),
+                viejo: formatMoney(originalValues.montototal)
+            };
+        }
+        
+        // Descuento
+        const descuento = parseFloat(descuentoInput.value) || 0;
+        if (descuento !== originalValues.descuentoaplicado) {
+            cambios.descuento = {
+                nuevo: formatMoney(descuento),
+                viejo: formatMoney(originalValues.descuentoaplicado)
+            };
+        }
+        
+        // Pago recibido
+        const pagoRecibido = parseFloat(pagoRecibidoInput.value) || 0;
+        if (pagoRecibido !== originalValues.pagorecibido) {
+            cambios.pago = {
+                nuevo: formatMoney(pagoRecibido),
+                viejo: formatMoney(originalValues.pagorecibido)
+            };
+        }
+        
+        // Cambio (si es efectivo)
+        const cambio = calcularCambio();
+        if (metodoPagoSelect.value === 'EFECTIVO' && cambio !== originalValues.cambio) {
+            cambios.cambio = {
+                nuevo: formatMoney(cambio),
+                viejo: formatMoney(originalValues.cambio)
+            };
+        }
+        
+        // Actualizar elementos del resumen
+        document.getElementById('changeCliente').innerHTML = cambios.cliente 
+            ? `<span class="change-new">${cambios.cliente.nuevo}</span><span class="change-old">${cambios.cliente.viejo}</span>`
+            : clienteText;
+        
+        document.getElementById('changeMetodo').innerHTML = cambios.metodo
+            ? `<span class="change-new">${cambios.metodo.nuevo}</span><span class="change-old">${cambios.metodo.viejo}</span>`
+            : metodoText;
+        
+        document.getElementById('changeEstado').innerHTML = cambios.estado
+            ? `<span class="change-new">${cambios.estado.nuevo}</span><span class="change-old">${cambios.estado.viejo}</span>`
+            : estadoText;
+        
+        document.getElementById('changeMonto').innerHTML = cambios.monto
+            ? `<span class="change-new">${cambios.monto.nuevo}</span><span class="change-old">${cambios.monto.viejo}</span>`
+            : formatMoney(montoTotal);
+        
+        document.getElementById('changeDescuento').innerHTML = cambios.descuento
+            ? `<span class="change-new">${cambios.descuento.nuevo}</span><span class="change-old">${cambios.descuento.viejo}</span>`
+            : formatMoney(descuento);
+        
+        document.getElementById('changePago').innerHTML = cambios.pago
+            ? `<span class="change-new">${cambios.pago.nuevo}</span><span class="change-old">${cambios.pago.viejo}</span>`
+            : formatMoney(pagoRecibido);
+        
+        if (metodoPagoSelect.value === 'EFECTIVO') {
+            const cambioElement = document.getElementById('changeCambio');
+            const cambioItem = document.getElementById('changeCambioItem');
+            if (cambios.cambio) {
+                cambioElement.innerHTML = `<span class="change-new">${cambios.cambio.nuevo}</span><span class="change-old">${cambios.cambio.viejo}</span>`;
+            } else {
+                cambioElement.textContent = formatMoney(cambio);
+            }
+            cambioItem.style.display = 'flex';
+        } else {
+            document.getElementById('changeCambioItem').style.display = 'none';
+        }
+        
+        // Mostrar u ocultar resumen
+        const hayCambios = Object.keys(cambios).length > 0;
+        changeSummary.style.display = hayCambios ? 'block' : 'none';
+        
+        return cambios;
+    }
+    
+    // Función para validar formulario
+    function validarFormulario() {
+        let errores = [];
+        
+        // Validar monto total
+        const montoTotal = parseFloat(montoTotalInput.value) || 0;
+        if (montoTotal <= 0) {
+            errores.push('El monto total debe ser mayor a 0');
+            montoTotalInput.style.borderColor = 'var(--peligro)';
+            montoTotalInput.style.boxShadow = '0 0 0 3px rgba(220, 53, 69, 0.1)';
+        } else {
+            montoTotalInput.style.borderColor = '';
+            montoTotalInput.style.boxShadow = '';
+        }
+        
+        // Validar descuento no negativo
+        const descuento = parseFloat(descuentoInput.value) || 0;
+        if (descuento < 0) {
+            errores.push('El descuento no puede ser negativo');
+            descuentoInput.style.borderColor = 'var(--peligro)';
+            descuentoInput.style.boxShadow = '0 0 0 3px rgba(220, 53, 69, 0.1)';
+        } else {
+            descuentoInput.style.borderColor = '';
+            descuentoInput.style.boxShadow = '';
+        }
+        
+        // Validar pago recibido no negativo
+        const pagoRecibido = parseFloat(pagoRecibidoInput.value) || 0;
+        if (pagoRecibido < 0) {
+            errores.push('El pago recibido no puede ser negativo');
+            pagoRecibidoInput.style.borderColor = 'var(--peligro)';
+            pagoRecibidoInput.style.boxShadow = '0 0 0 3px rgba(220, 53, 69, 0.1)';
+        } else {
+            pagoRecibidoInput.style.borderColor = '';
+            pagoRecibidoInput.style.boxShadow = '';
+        }
+        
+        // Validar pago en efectivo
+        if (metodoPagoSelect.value === 'EFECTIVO') {
+            const montoTotal = parseFloat(montoTotalInput.value) || 0;
+            const descuento = parseFloat(descuentoInput.value) || 0;
+            const pagoRecibido = parseFloat(pagoRecibidoInput.value) || 0;
+            const total = montoTotal - descuento;
+            
+            if (pagoRecibido < total) {
+                errores.push(`Para pago en efectivo, el pago recibido (${formatMoney(pagoRecibido)}) debe ser mayor o igual al total (${formatMoney(total)})`);
+            }
+        }
+        
+        // Validar cambio de estado a cancelado
+        if (estadoVentaSelect.value === 'CANCELADA' && originalValues.estadoventa !== 'CANCELADA') {
+            errores.push('⚠️ ADVERTENCIA: Al cancelar la venta, se restaurará el stock de los libros. Usa la función específica de cancelación.');
+        }
+        
+        return errores;
+    }
+    
+    // Event listeners
+    clienteSelect.addEventListener('change', actualizarResumen);
+    metodoPagoSelect.addEventListener('change', function() {
+        if (this.value === 'EFECTIVO') {
+            pagoHint.innerHTML = '<strong class="text-danger">Para pago en efectivo, ingrese la cantidad recibida (debe ser mayor o igual al total)</strong>';
+        } else {
+            pagoHint.textContent = 'Para pago en efectivo, ingrese la cantidad recibida';
+        }
+        actualizarResumen();
+    });
+    estadoVentaSelect.addEventListener('change', actualizarResumen);
+    montoTotalInput.addEventListener('input', actualizarResumen);
+    descuentoInput.addEventListener('input', actualizarResumen);
+    pagoRecibidoInput.addEventListener('input', actualizarResumen);
+    
+    // Validar inputs numéricos
+    [montoTotalInput, descuentoInput, pagoRecibidoInput].forEach(input => {
+        input.addEventListener('blur', function() {
+            if (this.value && parseFloat(this.value) >= 0) {
+                this.value = parseFloat(this.value).toFixed(2);
+            }
+            actualizarResumen();
+        });
+        
+        input.addEventListener('input', function() {
+            if (parseFloat(this.value) < 0) {
+                this.value = 0;
+            }
+        });
+    });
+    
+    // Manejar envío del formulario
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const errores = validarFormulario();
+        const cambios = actualizarResumen();
+        
+        if (errores.length > 0) {
+            mostrarErrores(errores);
+            return false;
+        }
+        
+        if (Object.keys(cambios).length === 0) {
+            const confirmarSinCambios = confirm('No has realizado ningún cambio. ¿Deseas continuar de todos modos?');
+            if (!confirmarSinCambios) {
+                return false;
+            }
+        }
+        
+        const confirmacion = confirm(`¿Confirmar actualización de venta #{{ venta.ventaid }}?\n\nSe aplicarán los cambios mostrados en el resumen.`);
+        
+        if (confirmacion) {
+            // Mostrar loading
+            submitBtn.innerHTML = '<span class="btn-icon">⏳</span> Actualizando...';
+            submitBtn.disabled = true;
+            
+            // Enviar formulario
+            setTimeout(() => {
+                form.submit();
+            }, 500);
+        }
+        
+        return false;
+    });
+    
+    // Función para mostrar errores
+    function mostrarErrores(errores) {
+        const modal = document.createElement('div');
+        modal.className = 'warning-modal';
+        
+        const dialog = document.createElement('div');
+        dialog.className = 'warning-dialog';
+        
+        dialog.innerHTML = `
+            <div class="warning-icon">❌</div>
+            <h3 class="warning-title">Errores en el formulario</h3>
+            <div class="warning-message">
+                ${errores.map(error => `• ${error}`).join('\n')}
+            </div>
+            <div class="warning-actions">
+                <button type="button" id="closeWarning" class="warning-btn warning-btn-secondary">
+                    Entendido
+                </button>
+            </div>
+        `;
+        
+        modal.appendChild(dialog);
+        document.body.appendChild(modal);
+        document.body.style.overflow = 'hidden';
+        
+        document.getElementById('closeWarning').addEventListener('click', function() {
+            document.body.removeChild(modal);
+            document.body.style.overflow = '';
+        });
+        
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                document.body.removeChild(modal);
+                document.body.style.overflow = '';
+            }
+        });
+        
+        document.addEventListener('keydown', function closeOnEscape(e) {
+            if (e.key === 'Escape') {
+                document.body.removeChild(modal);
+                document.body.style.overflow = '';
+                document.removeEventListener('keydown', closeOnEscape);
+            }
+        });
+    }
+    
+    // Inicializar resumen
+    actualizarResumen();
+    
+    // Efectos visuales
+    const formInputs = document.querySelectorAll('.form-input, .form-select');
+    formInputs.forEach(input => {
+        input.addEventListener('focus', function() {
+            this.style.borderColor = 'var(--verde-principal)';
+            this.style.boxShadow = '0 0 0 3px rgba(46, 139, 87, 0.1)';
+        });
+        
+        input.addEventListener('blur', function() {
+            if (!this.classList.contains('invalid')) {
+                this.style.borderColor = '';
+                this.style.boxShadow = '';
+            }
+        });
+    });
+    
+    // Información de ayuda
+    console.log('💡 Tips para editar venta:');
+    console.log('   - Cambiar el estado a "CANCELADA" restaurará el stock');
+    console.log('   - Para pago en efectivo, el pago recibido debe cubrir el total');
+    console.log('   - Los cambios se mostrarán en el resumen en tiempo real');
+});
+</script>
+{% endblock %}

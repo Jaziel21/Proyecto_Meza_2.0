@@ -1,0 +1,1334 @@
+<!-- app_Libreria/templates/admin/ventas/agregar.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="admin-container">
+    <h1 class="page-title">Agregar Nueva Venta</h1>
+    
+    {% if messages %}
+    <div class="messages-container">
+        {% for message in messages %}
+        <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %}">
+            <span>{{ message }}</span>
+            <button type="button" class="alert-close" onclick="this.parentElement.style.display='none'">×</button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <div class="card">
+        <div class="card-content">
+            <form method="post" id="ventaForm" class="venta-form">
+                {% csrf_token %}
+                
+                <!-- Información Básica de la Venta -->
+                <div class="form-grid">
+                    <div class="form-column">
+                        <div class="form-group">
+                            <label class="form-label">Cliente *</label>
+                            <select class="form-select" name="clienteid" required id="clienteSelect">
+                                <option value="">Seleccionar cliente</option>
+                                {% for cliente in clientes %}
+                                <option value="{{ cliente.id }}">
+                                    {{ cliente.username }} 
+                                    {% if cliente.first_name or cliente.last_name %}
+                                    - {{ cliente.first_name }} {{ cliente.last_name }}
+                                    {% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            {% if not clientes %}
+                            <div class="warning-box">
+                                <span class="warning-icon">⚠️</span>
+                                <div class="warning-text">
+                                    No hay clientes registrados. 
+                                    <a href="/admin/auth/user/add/" target="_blank" class="warning-link">
+                                        Crear cliente en el admin primero
+                                    </a>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="form-column">
+                        <div class="form-group">
+                            <label class="form-label">Método de Pago *</label>
+                            <select class="form-select" name="metodopago" required id="metodoPago">
+                                <option value="">Seleccionar método</option>
+                                <option value="EFECTIVO">Efectivo</option>
+                                <option value="TARJETA">Tarjeta</option>
+                                <option value="TRANSFERENCIA">Transferencia</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección para Agregar Libros -->
+                <div class="section-card">
+                    <div class="section-header">
+                        <span class="section-icon">📚</span>
+                        <h3>Libros de la Venta</h3>
+                    </div>
+                    <div class="section-content">
+                        <div id="librosContainer">
+                            <div class="libro-item">
+                                <div class="libro-grid">
+                                    <div class="libro-field">
+                                        <label class="form-label">Libro *</label>
+                                        <select class="form-select libro-select" name="libros" required>
+                                            <option value="">Seleccionar libro</option>
+                                            {% for libro in libros %}
+                                            <option value="{{ libro.libroid }}" 
+                                                    data-precio="{{ libro.precioventa }}"
+                                                    data-stock="{{ libro.stock }}"
+                                                    data-titulo="{{ libro.titulo }}">
+                                                {{ libro.titulo }} - ${{ libro.precioventa }} (Stock: {{ libro.stock }})
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="libro-field">
+                                        <label class="form-label">Cantidad *</label>
+                                        <input type="number" class="form-input cantidad-input" name="cantidades" 
+                                               min="1" value="1" required>
+                                    </div>
+                                    <div class="libro-field">
+                                        <label class="form-label">Precio Unitario</label>
+                                        <input type="number" step="0.01" class="form-input precio-input" 
+                                               name="precios" readonly>
+                                    </div>
+                                    <div class="libro-field libro-actions">
+                                        <label class="form-label">&nbsp;</label>
+                                        <button type="button" class="btn-action btn-remove" onclick="eliminarLibro(this)" disabled>
+                                            <span class="action-icon">🗑️</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="libro-info">
+                                    <small class="info-text"></small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button type="button" class="btn btn-outline-primary" onclick="agregarLibro()">
+                            <span class="btn-icon">➕</span> Agregar Otro Libro
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Resumen de la Venta -->
+                <div class="resumen-grid">
+                    <div class="resumen-main">
+                        <div class="section-card">
+                            <div class="section-header section-info">
+                                <span class="section-icon">💰</span>
+                                <h3>Resumen de la Venta</h3>
+                            </div>
+                            <div class="section-content">
+                                <div id="resumenLibros" class="resumen-libros">
+                                    <div class="empty-resumen">Agrega libros para ver el resumen</div>
+                                </div>
+                                
+                                <div class="divider"></div>
+                                
+                                <div class="form-grid">
+                                    <div class="form-column">
+                                        <div class="form-group">
+                                            <label class="form-label">Descuento Aplicado</label>
+                                            <input type="number" step="0.01" min="0" class="form-input" 
+                                                   name="descuentoaplicado" value="0" id="descuento" placeholder="0.00">
+                                        </div>
+                                    </div>
+                                    <div class="form-column">
+                                        <div class="form-group">
+                                            <label class="form-label">Pago Recibido</label>
+                                            <input type="number" step="0.01" min="0" class="form-input" 
+                                                   name="pagorecibido" value="0" id="pagoRecibido" placeholder="0.00">
+                                            <small class="form-hint" id="textoPagoRecibido">
+                                                Para pago en efectivo, ingrese la cantidad recibida
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="resumen-total">
+                                    <div class="total-grid">
+                                        <div class="total-item">
+                                            <div class="total-number" id="totalLibros">0</div>
+                                            <div class="total-label">Libros</div>
+                                        </div>
+                                        <div class="total-item">
+                                            <div class="total-number" id="totalItems">0</div>
+                                            <div class="total-label">Items</div>
+                                        </div>
+                                        <div class="total-item">
+                                            <div class="total-number total-amount" id="montoTotalDisplay">$0.00</div>
+                                            <div class="total-label">Total Venta</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="resumen-sidebar">
+                        <div class="section-card">
+                            <div class="section-header section-warning">
+                                <span class="section-icon">⚡</span>
+                                <h3>Información de Pago</h3>
+                            </div>
+                            <div class="section-content">
+                                <div class="info-item">
+                                    <div class="info-label">Método:</div>
+                                    <div class="info-value" id="displayMetodoPago">No seleccionado</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Subtotal:</div>
+                                    <div class="info-value" id="displaySubtotal">$0.00</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Descuento:</div>
+                                    <div class="info-value" id="displayDescuento">$0.00</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Total:</div>
+                                    <div class="info-value info-total" id="displayTotal">$0.00</div>
+                                </div>
+                                <div class="info-item" id="campoCambio" style="display: none;">
+                                    <div class="info-label">Cambio:</div>
+                                    <div class="info-value info-change" id="displayCambio">$0.00</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Estado:</div>
+                                    <div class="info-value">
+                                        <span class="status-badge" id="displayEstado">INCOMPLETO</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Campo oculto para el total -->
+                <input type="hidden" name="montototal" id="montototalHidden" value="0">
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary btn-large" id="btnSubmit">
+                        <span class="btn-icon">💰</span> Guardar Venta
+                    </button>
+                    <a href="{% url 'admin_ventas' %}" class="btn btn-secondary btn-large">
+                        <span class="btn-icon">❌</span> Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Variables CSS */
+:root {
+    --verde-principal: #2e8b57;
+    --verde-claro: rgba(46, 139, 87, 0.1);
+    --blanco: #ffffff;
+    --gris-claro: #f8f9fa;
+    --gris-medio: #e9ecef;
+    --gris-oscuro: #343a40;
+    --texto: #212529;
+    --texto-secundario: #6c757d;
+    --primario: #2e8b57;
+    --secundario: #28a745;
+    --peligro: #dc3545;
+    --advertencia: #ffc107;
+    --info: #17a2b8;
+    --warning: #ffc107;
+    --sombra: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --sombra-hover: 0 4px 8px rgba(0, 0, 0, 0.15);
+    --radio-borde: 8px;
+    --radio-input: 6px;
+}
+
+/* Contenedor principal */
+.admin-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.page-title {
+    color: var(--verde-principal);
+    font-size: 28px;
+    margin-bottom: 25px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--verde-claro);
+}
+
+/* Alertas */
+.messages-container {
+    margin-bottom: 25px;
+}
+
+.alert {
+    padding: 15px 20px;
+    border-radius: var(--radio-borde);
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    animation: slideIn 0.3s ease;
+}
+
+.alert-success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.alert-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.alert-warning {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.alert-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: inherit;
+    opacity: 0.7;
+    padding: 0 5px;
+}
+
+.alert-close:hover {
+    opacity: 1;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Card principal */
+.card {
+    background: var(--blanco);
+    border-radius: var(--radio-borde);
+    box-shadow: var(--sombra);
+    overflow: hidden;
+}
+
+.card-content {
+    padding: 30px;
+}
+
+/* Formulario base */
+.venta-form {
+    max-width: 100%;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 25px;
+}
+
+.form-column {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-label {
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--texto);
+    font-size: 15px;
+}
+
+.form-label:after {
+    content: ' *';
+    color: var(--peligro);
+}
+
+.form-input,
+.form-select {
+    padding: 12px 15px;
+    border: 2px solid var(--gris-medio);
+    border-radius: var(--radio-input);
+    font-size: 15px;
+    transition: all 0.3s ease;
+    background-color: var(--blanco);
+}
+
+.form-input:focus,
+.form-select:focus {
+    outline: none;
+    border-color: var(--verde-principal);
+    box-shadow: 0 0 0 3px rgba(46, 139, 87, 0.1);
+}
+
+.form-select {
+    appearance: none;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="%23212529" viewBox="0 0 16 16"><path d="M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z"/></svg>');
+    background-repeat: no-repeat;
+    background-position: right 15px center;
+    background-size: 12px;
+    cursor: pointer;
+    padding-right: 40px;
+}
+
+.form-hint {
+    display: block;
+    margin-top: 6px;
+    color: var(--texto-secundario);
+    font-size: 13px;
+}
+
+/* Warning box */
+.warning-box {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-top: 10px;
+    padding: 12px 15px;
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: var(--radio-input);
+}
+
+.warning-icon {
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.warning-text {
+    flex: 1;
+    font-size: 14px;
+    color: #856404;
+}
+
+.warning-link {
+    color: #856404;
+    text-decoration: none;
+    font-weight: 600;
+    border-bottom: 1px dotted #856404;
+}
+
+.warning-link:hover {
+    border-bottom-style: solid;
+}
+
+/* Section cards */
+.section-card {
+    background: var(--blanco);
+    border-radius: var(--radio-borde);
+    border: 2px solid var(--gris-medio);
+    margin-bottom: 25px;
+    overflow: hidden;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 18px 25px;
+    background-color: var(--gris-claro);
+    border-bottom: 2px solid var(--gris-medio);
+}
+
+.section-header.section-info {
+    background-color: #d1ecf1;
+    border-bottom-color: #bee5eb;
+}
+
+.section-header.section-warning {
+    background-color: #fff3cd;
+    border-bottom-color: #ffeaa7;
+}
+
+.section-icon {
+    font-size: 20px;
+}
+
+.section-header h3 {
+    margin: 0;
+    font-size: 18px;
+    color: var(--texto);
+}
+
+.section-content {
+    padding: 25px;
+}
+
+/* Libros section */
+.libro-item {
+    padding: 20px;
+    background-color: var(--gris-claro);
+    border-radius: var(--radio-input);
+    border: 2px solid var(--gris-medio);
+    margin-bottom: 20px;
+    transition: all 0.3s ease;
+}
+
+.libro-item:hover {
+    background-color: #e9ecef;
+    border-color: var(--verde-principal);
+    transform: translateY(-2px);
+    box-shadow: var(--sombra-hover);
+}
+
+.libro-grid {
+    display: grid;
+    grid-template-columns: 1fr 0.6fr 0.6fr 0.2fr;
+    gap: 15px;
+    align-items: end;
+}
+
+.libro-field {
+    display: flex;
+    flex-direction: column;
+}
+
+.libro-actions {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+
+.btn-action {
+    padding: 10px 15px;
+    border-radius: var(--radio-input);
+    border: 2px solid transparent;
+    background-color: var(--gris-claro);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-remove {
+    background-color: transparent;
+    border-color: var(--peligro);
+    color: var(--peligro);
+}
+
+.btn-remove:hover:not(:disabled) {
+    background-color: var(--peligro);
+    color: white;
+}
+
+.btn-remove:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.action-icon {
+    font-size: 16px;
+}
+
+.libro-info {
+    margin-top: 10px;
+}
+
+.info-text {
+    color: var(--texto-secundario);
+    font-size: 13px;
+    display: block;
+    min-height: 20px;
+}
+
+/* Botón agregar libro */
+.btn-outline-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 25px;
+    background-color: transparent;
+    border: 2px solid var(--primario);
+    color: var(--primario);
+    border-radius: var(--radio-input);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 15px;
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--primario);
+    color: white;
+    transform: translateY(-2px);
+}
+
+/* Resumen grid */
+.resumen-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 25px;
+    margin-bottom: 25px;
+}
+
+.resumen-main, .resumen-sidebar {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Resumen libros */
+.resumen-libros {
+    min-height: 100px;
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 10px;
+    background-color: var(--gris-claro);
+    border-radius: var(--radio-input);
+    border: 1px solid var(--gris-medio);
+}
+
+.empty-resumen {
+    text-align: center;
+    color: var(--texto-secundario);
+    padding: 30px;
+    font-style: italic;
+}
+
+.resumen-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    background-color: var(--blanco);
+    border-radius: 4px;
+    margin-bottom: 8px;
+    border: 1px solid var(--gris-medio);
+}
+
+.resumen-item:last-child {
+    margin-bottom: 0;
+}
+
+.item-title {
+    font-weight: 600;
+    color: var(--texto);
+    font-size: 14px;
+}
+
+.item-details {
+    color: var(--texto-secundario);
+    font-size: 12px;
+    margin-top: 3px;
+}
+
+.item-total {
+    font-weight: 600;
+    color: var(--secundario);
+    font-size: 15px;
+}
+
+/* Divider */
+.divider {
+    height: 1px;
+    background-color: var(--gris-medio);
+    margin: 20px 0;
+}
+
+/* Resumen total */
+.resumen-total {
+    margin-top: 25px;
+    padding: 20px;
+    background: linear-gradient(135deg, var(--primario), #3cb371);
+    border-radius: var(--radio-borde);
+    color: white;
+}
+
+.total-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    text-align: center;
+    gap: 20px;
+}
+
+.total-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.total-number {
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 5px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.total-amount {
+    font-size: 36px;
+}
+
+.total-label {
+    font-size: 14px;
+    opacity: 0.9;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Información sidebar */
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--gris-medio);
+}
+
+.info-item:last-child {
+    border-bottom: none;
+}
+
+.info-label {
+    font-weight: 600;
+    color: var(--texto);
+    font-size: 14px;
+}
+
+.info-value {
+    color: var(--texto);
+    font-size: 15px;
+    text-align: right;
+}
+
+.info-total {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--secundario);
+}
+
+.info-change {
+    color: var(--info);
+    font-weight: 600;
+}
+
+/* Status badge */
+.status-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background-color: var(--gris-medio);
+    color: var(--gris-oscuro);
+}
+
+.status-success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.status-warning {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+/* Botones finales */
+.form-actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 30px;
+    padding-top: 25px;
+    border-top: 2px solid var(--gris-medio);
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 14px 28px;
+    border-radius: var(--radio-input);
+    text-decoration: none;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.3s ease;
+    font-size: 16px;
+    gap: 10px;
+}
+
+.btn-large {
+    padding: 16px 32px;
+    font-size: 17px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primario), #3cb371);
+    color: white;
+    box-shadow: 0 4px 6px rgba(46, 139, 87, 0.2);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #247449, #2e8b57);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(46, 139, 87, 0.3);
+}
+
+.btn-secondary {
+    background: linear-gradient(135deg, var(--gris-medio), #dae0e5);
+    color: var(--texto);
+}
+
+.btn-secondary:hover {
+    background: linear-gradient(135deg, var(--gris-oscuro), #495057);
+    color: var(--blanco);
+    transform: translateY(-3px);
+}
+
+.btn-icon {
+    font-size: 18px;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+    .resumen-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+}
+
+@media (max-width: 992px) {
+    .libro-grid {
+        grid-template-columns: 1fr 0.8fr 0.8fr 0.4fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .admin-container {
+        padding: 15px;
+    }
+    
+    .form-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .libro-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .total-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .card-content {
+        padding: 20px;
+    }
+    
+    .section-content {
+        padding: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .page-title {
+        font-size: 24px;
+    }
+    
+    .section-header {
+        padding: 15px 20px;
+    }
+    
+    .section-header h3 {
+        font-size: 16px;
+    }
+    
+    .form-input,
+    .form-select {
+        padding: 10px 12px;
+        font-size: 16px;
+    }
+}
+</style>
+
+<script>
+// Variables globales
+let contadorLibros = 1;
+
+// Función para agregar un nuevo campo de libro
+function agregarLibro() {
+    contadorLibros++;
+    const libroHTML = `
+        <div class="libro-item">
+            <div class="libro-grid">
+                <div class="libro-field">
+                    <label class="form-label">Libro *</label>
+                    <select class="form-select libro-select" name="libros" required>
+                        <option value="">Seleccionar libro</option>
+                        {% for libro in libros %}
+                        <option value="{{ libro.libroid }}" 
+                                data-precio="{{ libro.precioventa }}"
+                                data-stock="{{ libro.stock }}"
+                                data-titulo="{{ libro.titulo }}">
+                            {{ libro.titulo }} - ${{ libro.precioventa }} (Stock: {{ libro.stock }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="libro-field">
+                    <label class="form-label">Cantidad *</label>
+                    <input type="number" class="form-input cantidad-input" name="cantidades" 
+                           min="1" value="1" required>
+                </div>
+                <div class="libro-field">
+                    <label class="form-label">Precio Unitario</label>
+                    <input type="number" step="0.01" class="form-input precio-input" 
+                           name="precios" readonly>
+                </div>
+                <div class="libro-field libro-actions">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="button" class="btn-action btn-remove" onclick="eliminarLibro(this)">
+                        <span class="action-icon">🗑️</span>
+                    </button>
+                </div>
+            </div>
+            <div class="libro-info">
+                <small class="info-text"></small>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('librosContainer').insertAdjacentHTML('beforeend', libroHTML);
+    
+    // Agregar event listeners al nuevo libro
+    const nuevoLibro = document.querySelector('#librosContainer .libro-item:last-child');
+    const select = nuevoLibro.querySelector('.libro-select');
+    const cantidadInput = nuevoLibro.querySelector('.cantidad-input');
+    
+    select.addEventListener('change', function() { actualizarPrecio(this); });
+    cantidadInput.addEventListener('input', function() { actualizarSubtotal(this); });
+    
+    // Habilitar eliminación en el primer libro si hay más de uno
+    actualizarBotonesEliminar();
+}
+
+// Función para eliminar un libro
+function eliminarLibro(boton) {
+    const libroItem = boton.closest('.libro-item');
+    libroItem.remove();
+    contadorLibros--;
+    actualizarBotonesEliminar();
+    calcularTotal();
+}
+
+// Actualizar botones de eliminar (deshabilitar si solo hay un libro)
+function actualizarBotonesEliminar() {
+    const botones = document.querySelectorAll('.libro-item .btn-remove');
+    botones.forEach((boton, index) => {
+        if (botones.length === 1) {
+            boton.disabled = true;
+        } else {
+            boton.disabled = false;
+        }
+    });
+}
+
+// Actualizar precio cuando se selecciona un libro
+function actualizarPrecio(select) {
+    const selectedOption = select.options[select.selectedIndex];
+    const precio = selectedOption.getAttribute('data-precio');
+    const stock = selectedOption.getAttribute('data-stock');
+    const titulo = selectedOption.getAttribute('data-titulo');
+    
+    const precioInput = select.closest('.libro-grid').querySelector('.precio-input');
+    const infoLibro = select.closest('.libro-item').querySelector('.info-text');
+    
+    if (precio && selectedOption.value) {
+        precioInput.value = precio;
+        infoLibro.textContent = `${titulo} - Stock disponible: ${stock} unidades`;
+        
+        // Actualizar cantidad máxima según stock
+        const cantidadInput = select.closest('.libro-grid').querySelector('.cantidad-input');
+        cantidadInput.max = stock;
+        
+        if (parseInt(cantidadInput.value) > parseInt(stock)) {
+            cantidadInput.value = stock;
+        }
+    } else {
+        precioInput.value = '';
+        infoLibro.textContent = '';
+    }
+    
+    calcularTotal();
+}
+
+// Actualizar subtotal cuando cambia la cantidad
+function actualizarSubtotal(input) {
+    const libroItem = input.closest('.libro-item');
+    const select = libroItem.querySelector('.libro-select');
+    const stock = select.options[select.selectedIndex]?.getAttribute('data-stock') || 0;
+    
+    if (parseInt(input.value) > parseInt(stock)) {
+        input.value = stock;
+    }
+    
+    calcularTotal();
+}
+
+// Calcular total de la venta
+function calcularTotal() {
+    let total = 0;
+    let totalLibros = 0;
+    let totalItems = 0;
+    
+    // Calcular subtotal de libros
+    const libroItems = document.querySelectorAll('.libro-item');
+    libroItems.forEach(item => {
+        const precioInput = item.querySelector('.precio-input');
+        const cantidadInput = item.querySelector('.cantidad-input');
+        const select = item.querySelector('.libro-select');
+        
+        if (select.value && precioInput.value && cantidadInput.value) {
+            const subtotal = parseFloat(precioInput.value) * parseInt(cantidadInput.value);
+            total += subtotal;
+            totalLibros++;
+            totalItems += parseInt(cantidadInput.value);
+        }
+    });
+    
+    // Aplicar descuento
+    const descuento = parseFloat(document.getElementById('descuento').value) || 0;
+    const totalConDescuento = Math.max(total - descuento, 0);
+    
+    // Información de pago
+    const pagoRecibido = parseFloat(document.getElementById('pagoRecibido').value) || 0;
+    const metodoPago = document.getElementById('metodoPago').value;
+    
+    // Calcular cambio
+    let cambio = 0;
+    if (metodoPago === 'EFECTIVO' && pagoRecibido > 0) {
+        cambio = Math.max(pagoRecibido - totalConDescuento, 0);
+    }
+    
+    // Actualizar displays
+    document.getElementById('totalLibros').textContent = totalLibros;
+    document.getElementById('totalItems').textContent = totalItems;
+    document.getElementById('montoTotalDisplay').textContent = `$${totalConDescuento.toFixed(2)}`;
+    document.getElementById('displaySubtotal').textContent = `$${total.toFixed(2)}`;
+    document.getElementById('displayDescuento').textContent = `$${descuento.toFixed(2)}`;
+    document.getElementById('displayTotal').textContent = `$${totalConDescuento.toFixed(2)}`;
+    document.getElementById('displayCambio').textContent = `$${cambio.toFixed(2)}`;
+    document.getElementById('montototalHidden').value = totalConDescuento.toFixed(2);
+    
+    // Actualizar método de pago
+    document.getElementById('displayMetodoPago').textContent = metodoPago || 'No seleccionado';
+    
+    // Mostrar/ocultar campo de cambio
+    const campoCambio = document.getElementById('campoCambio');
+    if (metodoPago === 'EFECTIVO' && pagoRecibido > 0) {
+        campoCambio.style.display = 'block';
+    } else {
+        campoCambio.style.display = 'none';
+    }
+    
+    // Validar estado del formulario
+    const btnSubmit = document.getElementById('btnSubmit');
+    const clienteSelect = document.getElementById('clienteSelect');
+    const tieneLibros = totalLibros > 0;
+    const tieneCliente = clienteSelect.value !== '';
+    const tieneMetodoPago = metodoPago !== '';
+    
+    let estado = 'INCOMPLETO';
+    let estadoClass = '';
+    
+    if (tieneLibros && tieneCliente && tieneMetodoPago) {
+        if (metodoPago === 'EFECTIVO') {
+            if (pagoRecibido >= totalConDescuento) {
+                estado = 'LISTO';
+                estadoClass = 'status-success';
+            } else {
+                estado = 'PAGO INSUFICIENTE';
+                estadoClass = 'status-danger';
+            }
+        } else {
+            estado = 'LISTO';
+            estadoClass = 'status-success';
+        }
+    } else if (!tieneLibros && !tieneCliente && !tieneMetodoPago) {
+        estado = 'INCOMPLETO';
+        estadoClass = '';
+    } else {
+        estado = 'FALTAN DATOS';
+        estadoClass = 'status-warning';
+    }
+    
+    const estadoElement = document.getElementById('displayEstado');
+    estadoElement.textContent = estado;
+    estadoElement.className = 'status-badge ' + estadoClass;
+    
+    // Actualizar resumen de libros
+    actualizarResumenLibros();
+}
+
+// Actualizar resumen visual de libros
+function actualizarResumenLibros() {
+    const resumenContainer = document.getElementById('resumenLibros');
+    let resumenHTML = '';
+    
+    const libroItems = document.querySelectorAll('.libro-item');
+    libroItems.forEach((item, index) => {
+        const select = item.querySelector('.libro-select');
+        const cantidadInput = item.querySelector('.cantidad-input');
+        const precioInput = item.querySelector('.precio-input');
+        
+        if (select.value && cantidadInput.value && precioInput.value) {
+            const titulo = select.options[select.selectedIndex].getAttribute('data-titulo');
+            const subtotal = parseFloat(precioInput.value) * parseInt(cantidadInput.value);
+            
+            resumenHTML += `
+                <div class="resumen-item">
+                    <div>
+                        <div class="item-title">${titulo}</div>
+                        <div class="item-details">${cantidadInput.value} x $${parseFloat(precioInput.value).toFixed(2)}</div>
+                    </div>
+                    <div class="item-total">$${subtotal.toFixed(2)}</div>
+                </div>
+            `;
+        }
+    });
+    
+    if (resumenHTML === '') {
+        resumenHTML = '<div class="empty-resumen">Agrega libros para ver el resumen</div>';
+    }
+    
+    resumenContainer.innerHTML = resumenHTML;
+}
+
+// Inicializar event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Event listeners para el primer libro
+    const primerSelect = document.querySelector('.libro-select');
+    const primerCantidad = document.querySelector('.cantidad-input');
+    
+    if (primerSelect) {
+        primerSelect.addEventListener('change', function() { actualizarPrecio(this); });
+    }
+    if (primerCantidad) {
+        primerCantidad.addEventListener('input', function() { actualizarSubtotal(this); });
+    }
+    
+    // Event listener para método de pago
+    const metodoPagoSelect = document.getElementById('metodoPago');
+    metodoPagoSelect.addEventListener('change', function() {
+        const textoPagoRecibido = document.getElementById('textoPagoRecibido');
+        
+        if (this.value === 'EFECTIVO') {
+            textoPagoRecibido.innerHTML = '<strong class="text-danger">Para pago en efectivo, ingrese la cantidad recibida (debe ser mayor o igual al total)</strong>';
+        } else {
+            textoPagoRecibido.innerHTML = 'Para pago en efectivo, ingrese la cantidad recibida';
+        }
+        
+        calcularTotal();
+    });
+    
+    // Event listeners para descuento y pago recibido
+    document.getElementById('descuento').addEventListener('input', calcularTotal);
+    document.getElementById('pagoRecibido').addEventListener('input', calcularTotal);
+    
+    // Inicializar
+    actualizarBotonesEliminar();
+    calcularTotal();
+});
+
+// Prevenir envío del formulario si hay errores
+document.getElementById('ventaForm').addEventListener('submit', function(e) {
+    const metodoPago = document.getElementById('metodoPago').value;
+    const pagoRecibido = parseFloat(document.getElementById('pagoRecibido').value) || 0;
+    const total = parseFloat(document.getElementById('montototalHidden').value) || 0;
+    const clienteSelect = document.getElementById('clienteSelect');
+    
+    // Validar cliente
+    if (!clienteSelect.value) {
+        e.preventDefault();
+        mostrarError('Debes seleccionar un cliente para la venta');
+        return false;
+    }
+    
+    // Validar método de pago
+    if (!metodoPago) {
+        e.preventDefault();
+        mostrarError('Debes seleccionar un método de pago');
+        return false;
+    }
+    
+    // Validar que hay al menos un libro
+    const libroItems = document.querySelectorAll('.libro-item');
+    let librosValidos = 0;
+    libroItems.forEach(item => {
+        const select = item.querySelector('.libro-select');
+        if (select.value) librosValidos++;
+    });
+    
+    if (librosValidos === 0) {
+        e.preventDefault();
+        mostrarError('Debes agregar al menos un libro a la venta');
+        return false;
+    }
+    
+    // Validar pago en efectivo
+    if (metodoPago === 'EFECTIVO' && pagoRecibido < total) {
+        e.preventDefault();
+        mostrarError(`Para pago en efectivo, el pago recibido debe ser mayor o igual al total de la venta.\n\nTotal: $${total.toFixed(2)}\nPago recibido: $${pagoRecibido.toFixed(2)}\nFaltante: $${(total - pagoRecibido).toFixed(2)}`);
+        return false;
+    }
+    
+    // Validar stock disponible
+    let stockInsuficiente = false;
+    let mensajeStock = '';
+    
+    libroItems.forEach((item, index) => {
+        const select = item.querySelector('.libro-select');
+        const cantidadInput = item.querySelector('.cantidad-input');
+        const stock = select.options[select.selectedIndex]?.getAttribute('data-stock') || 0;
+        const titulo = select.options[select.selectedIndex]?.getAttribute('data-titulo') || '';
+        
+        if (parseInt(cantidadInput.value) > parseInt(stock)) {
+            stockInsuficiente = true;
+            mensajeStock += `• ${titulo}: Solicitado ${cantidadInput.value}, Disponible ${stock}\n`;
+        }
+    });
+    
+    if (stockInsuficiente) {
+        e.preventDefault();
+        mostrarError('Stock insuficiente para los siguientes libros:\n\n' + mensajeStock);
+        return false;
+    }
+    
+    // Mostrar confirmación
+    const confirmacion = confirm(`¿Confirmar venta por $${total.toFixed(2)}?\n\nCliente: ${clienteSelect.options[clienteSelect.selectedIndex].text}\nMétodo: ${metodoPago}\nLibros: ${libroItems.length}`);
+    
+    if (!confirmacion) {
+        e.preventDefault();
+        return false;
+    }
+    
+    // Mostrar loading
+    const btnSubmit = document.getElementById('btnSubmit');
+    btnSubmit.innerHTML = '<span class="btn-icon">⏳</span> Procesando venta...';
+    btnSubmit.disabled = true;
+    
+    return true;
+});
+
+// Función para mostrar errores
+function mostrarError(mensaje) {
+    // Crear modal de error
+    const modal = document.createElement('div');
+    modal.className = 'error-modal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0,0,0,0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    `;
+    
+    const modalContent = document.createElement('div');
+    modalContent.style.cssText = `
+        background: white;
+        padding: 30px;
+        border-radius: var(--radio-borde);
+        max-width: 500px;
+        width: 90%;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    `;
+    
+    modalContent.innerHTML = `
+        <div style="text-align: center; margin-bottom: 20px;">
+            <span style="font-size: 48px; color: var(--peligro);">❌</span>
+            <h3 style="margin: 10px 0; color: var(--peligro);">Error</h3>
+        </div>
+        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 20px; white-space: pre-line;">
+            ${mensaje}
+        </div>
+        <button onclick="this.closest('.error-modal').remove()" 
+                style="background: var(--peligro); color: white; border: none; padding: 12px 24px; 
+                       border-radius: var(--radio-input); cursor: pointer; width: 100%; 
+                       font-size: 16px; font-weight: 600;">
+            Entendido
+        </button>
+    `;
+    
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
+    
+    // Cerrar con Escape
+    document.addEventListener('keydown', function closeOnEscape(e) {
+        if (e.key === 'Escape') {
+            modal.remove();
+            document.removeEventListener('keydown', closeOnEscape);
+        }
+    });
+}
+
+// Efectos visuales adicionales
+document.addEventListener('DOMContentLoaded', function() {
+    // Animación para items de libro
+    const libroItems = document.querySelectorAll('.libro-item');
+    libroItems.forEach(item => {
+        item.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px)';
+        });
+        
+        item.addEventListener('mouseleave', function() {
+            this.style.transform = '';
+        });
+    });
+    
+    // Validación en tiempo real para inputs numéricos
+    const inputsNum = document.querySelectorAll('input[type="number"]');
+    inputsNum.forEach(input => {
+        input.addEventListener('input', function() {
+            if (parseFloat(this.value) < 0) {
+                this.value = 0;
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

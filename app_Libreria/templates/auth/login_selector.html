@@ -1,0 +1,677 @@
+<!-- app_Libreria/templates/auth/login_selector.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="selector-container">
+    <div class="selector-card">
+        <div class="selector-header">
+            <div class="selector-icon">🔐</div>
+            <h2>Iniciar Sesión</h2>
+            <p class="selector-subtitle">Selecciona tu tipo de usuario</p>
+        </div>
+        
+        <div class="selector-body">
+            <div class="options-grid">
+                <!-- Opción Cliente -->
+                <div class="option-card client-option">
+                    <div class="option-icon">👤</div>
+                    <h3 class="option-title">Cliente</h3>
+                    <p class="option-description">Accede para comprar libros, ver tu historial y gestionar tu carrito.</p>
+                    <div class="option-features">
+                        <span class="feature">📚 Comprar libros</span>
+                        <span class="feature">🛒 Carrito de compras</span>
+                        <span class="feature">📋 Historial de pedidos</span>
+                    </div>
+                    <a href="{% url 'login_cliente' %}" class="btn option-btn client-btn">
+                        Acceder como Cliente
+                        <span class="btn-arrow">→</span>
+                    </a>
+                </div>
+                
+                <!-- Opción Administrador -->
+                <div class="option-card admin-option">
+                    <div class="option-icon">⚙️</div>
+                    <h3 class="option-title">Administrador</h3>
+                    <p class="option-description">Panel de gestión para administrar libros, autores, ventas y más.</p>
+                    <div class="option-features">
+                        <span class="feature">📊 Panel de control</span>
+                        <span class="feature">📦 Gestión de inventario</span>
+                        <span class="feature">💼 Reportes y estadísticas</span>
+                    </div>
+                    <a href="{% url 'login_admin' %}" class="btn option-btn admin-btn">
+                        Acceder como Admin
+                        <span class="btn-arrow">→</span>
+                    </a>
+                </div>
+            </div>
+            
+            <div class="selector-footer">
+                <a href="{% url 'inicio' %}" class="back-home-btn">
+                    <span class="home-icon">🏠</span>
+                    Volver al Inicio
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Variables CSS */
+:root {
+    --verde-principal: #2e8b57;
+    --verde-claro: rgba(46, 139, 87, 0.1);
+    --verde-hover: #247449;
+    --admin-azul: #4361ee;
+    --admin-claro: rgba(67, 97, 238, 0.1);
+    --admin-hover: #3a56d4;
+    --blanco: #ffffff;
+    --gris-claro: #f8f9fa;
+    --gris-medio: #e9ecef;
+    --gris-oscuro: #343a40;
+    --texto: #212529;
+    --texto-secundario: #6c757d;
+    --sombra: 0 4px 12px rgba(0, 0, 0, 0.1);
+    --sombra-hover: 0 8px 24px rgba(0, 0, 0, 0.15);
+    --radio-borde: 16px;
+    --radio-input: 8px;
+}
+
+/* Contenedor principal */
+.selector-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 80vh;
+    padding: 20px;
+    background: linear-gradient(135deg, var(--gris-claro) 0%, var(--blanco) 100%);
+}
+
+/* Tarjeta principal */
+.selector-card {
+    background: var(--blanco);
+    border-radius: var(--radio-borde);
+    box-shadow: var(--sombra);
+    width: 100%;
+    max-width: 900px;
+    overflow: hidden;
+    animation: slideUp 0.5s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Header del selector */
+.selector-header {
+    background: linear-gradient(135deg, var(--verde-principal), #3cb371);
+    color: white;
+    padding: 40px 30px 30px;
+    text-align: center;
+}
+
+.selector-icon {
+    font-size: 48px;
+    margin-bottom: 20px;
+    display: inline-block;
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+.selector-header h2 {
+    margin: 0 0 10px;
+    font-size: 32px;
+    font-weight: 600;
+}
+
+.selector-subtitle {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 16px;
+    font-weight: 400;
+}
+
+/* Cuerpo del selector */
+.selector-body {
+    padding: 40px 30px;
+}
+
+/* Grid de opciones */
+.options-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 30px;
+    margin-bottom: 40px;
+}
+
+/* Tarjetas de opción */
+.option-card {
+    background: var(--blanco);
+    border-radius: var(--radio-borde);
+    padding: 30px;
+    box-shadow: var(--sombra);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 2px solid transparent;
+    position: relative;
+    overflow: hidden;
+}
+
+.option-card:hover {
+    transform: translateY(-10px);
+    box-shadow: var(--sombra-hover);
+}
+
+.client-option:hover {
+    border-color: var(--verde-principal);
+}
+
+.admin-option:hover {
+    border-color: var(--admin-azul);
+}
+
+.option-icon {
+    font-size: 56px;
+    margin-bottom: 20px;
+    display: inline-block;
+    transition: transform 0.3s ease;
+}
+
+.option-card:hover .option-icon {
+    transform: scale(1.1);
+}
+
+.option-title {
+    margin: 0 0 15px;
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--texto);
+}
+
+.option-description {
+    margin: 0 0 20px;
+    color: var(--texto-secundario);
+    line-height: 1.6;
+    font-size: 15px;
+}
+
+/* Características */
+.option-features {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 25px;
+}
+
+.feature {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--texto);
+    font-size: 14px;
+    padding: 8px 12px;
+    background: var(--gris-claro);
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.client-option .feature:hover {
+    background: var(--verde-claro);
+    color: var(--verde-principal);
+    transform: translateX(5px);
+}
+
+.admin-option .feature:hover {
+    background: var(--admin-claro);
+    color: var(--admin-azul);
+    transform: translateX(5px);
+}
+
+/* Botones de opción */
+.option-btn {
+    width: 100%;
+    padding: 16px;
+    border-radius: var(--radio-input);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    text-decoration: none;
+    position: relative;
+    overflow: hidden;
+    border: 2px solid transparent;
+}
+
+.option-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+.option-btn:hover::before {
+    left: 100%;
+}
+
+.client-btn {
+    background: linear-gradient(135deg, var(--verde-principal), #3cb371);
+    color: white;
+}
+
+.client-btn:hover {
+    background: linear-gradient(135deg, var(--verde-hover), var(--verde-principal));
+    border-color: var(--verde-principal);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(46, 139, 87, 0.3);
+}
+
+.admin-btn {
+    background: linear-gradient(135deg, var(--admin-azul), #4cc9f0);
+    color: white;
+}
+
+.admin-btn:hover {
+    background: linear-gradient(135deg, var(--admin-hover), var(--admin-azul));
+    border-color: var(--admin-azul);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(67, 97, 238, 0.3);
+}
+
+.btn-arrow {
+    font-size: 18px;
+    transition: transform 0.3s ease;
+}
+
+.option-btn:hover .btn-arrow {
+    transform: translateX(5px);
+}
+
+/* Footer del selector */
+.selector-footer {
+    text-align: center;
+    padding-top: 30px;
+    border-top: 1px solid var(--gris-medio);
+}
+
+.back-home-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--texto-secundario);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 15px;
+    transition: all 0.3s ease;
+    padding: 12px 24px;
+    border-radius: var(--radio-input);
+    border: 1px solid var(--gris-medio);
+    background: var(--blanco);
+}
+
+.back-home-btn:hover {
+    color: var(--verde-principal);
+    background: var(--verde-claro);
+    border-color: var(--verde-principal);
+    transform: translateY(-2px);
+    box-shadow: var(--sombra);
+}
+
+.home-icon {
+    font-size: 18px;
+    transition: transform 0.3s ease;
+}
+
+.back-home-btn:hover .home-icon {
+    transform: scale(1.1);
+}
+
+/* Efectos decorativos */
+.option-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.client-option::after {
+    background: linear-gradient(90deg, var(--verde-principal), #3cb371);
+}
+
+.admin-option::after {
+    background: linear-gradient(90deg, var(--admin-azul), #4cc9f0);
+}
+
+.option-card:hover::after {
+    opacity: 1;
+}
+
+/* Badge de recomendación */
+.recommendation-badge {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    animation: pulse 2s infinite;
+    display: none; /* Oculto por defecto */
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .selector-container {
+        padding: 15px;
+    }
+    
+    .selector-card {
+        max-width: 100%;
+    }
+    
+    .selector-header {
+        padding: 30px 20px 25px;
+    }
+    
+    .selector-body {
+        padding: 30px 20px;
+    }
+    
+    .options-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .option-card {
+        padding: 25px;
+    }
+    
+    .selector-header h2 {
+        font-size: 28px;
+    }
+    
+    .selector-icon {
+        font-size: 40px;
+    }
+    
+    .option-icon {
+        font-size: 48px;
+    }
+    
+    .option-title {
+        font-size: 22px;
+    }
+}
+
+@media (max-width: 480px) {
+    .selector-header {
+        padding: 25px 15px 20px;
+    }
+    
+    .selector-body {
+        padding: 25px 15px;
+    }
+    
+    .selector-header h2 {
+        font-size: 24px;
+    }
+    
+    .selector-icon {
+        font-size: 36px;
+    }
+    
+    .option-card {
+        padding: 20px;
+    }
+    
+    .option-icon {
+        font-size: 40px;
+    }
+    
+    .option-title {
+        font-size: 20px;
+    }
+    
+    .option-btn {
+        padding: 14px;
+        font-size: 15px;
+    }
+    
+    .back-home-btn {
+        padding: 10px 20px;
+    }
+}
+
+/* Efecto de brillo al pasar mouse */
+.client-option:hover {
+    animation: glow-green 2s infinite alternate;
+}
+
+@keyframes glow-green {
+    from {
+        box-shadow: 0 8px 24px rgba(46, 139, 87, 0.15);
+    }
+    to {
+        box-shadow: 0 8px 24px rgba(46, 139, 87, 0.3);
+    }
+}
+
+.admin-option:hover {
+    animation: glow-blue 2s infinite alternate;
+}
+
+@keyframes glow-blue {
+    from {
+        box-shadow: 0 8px 24px rgba(67, 97, 238, 0.15);
+    }
+    to {
+        box-shadow: 0 8px 24px rgba(67, 97, 238, 0.3);
+    }
+}
+
+/* Indicador de selección */
+.selection-indicator {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--gris-claro);
+    padding: 10px 15px;
+    border-radius: var(--radio-input);
+    font-size: 14px;
+    color: var(--texto-secundario);
+    display: none;
+    animation: slideInRight 0.3s ease;
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const clientCard = document.querySelector('.client-option');
+    const adminCard = document.querySelector('.admin-option');
+    const clientBtn = document.querySelector('.client-btn');
+    const adminBtn = document.querySelector('.admin-btn');
+    
+    // Crear indicador de selección
+    const selectionIndicator = document.createElement('div');
+    selectionIndicator.className = 'selection-indicator';
+    document.body.appendChild(selectionIndicator);
+    
+    // Efectos de hover en tarjetas
+    [clientCard, adminCard].forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            const type = this.classList.contains('client-option') ? 'Cliente' : 'Administrador';
+            selectionIndicator.textContent = `Seleccionando: ${type}`;
+            selectionIndicator.style.display = 'block';
+            selectionIndicator.style.background = this.classList.contains('client-option') 
+                ? 'var(--verde-claro)' 
+                : 'var(--admin-claro)';
+            selectionIndicator.style.color = this.classList.contains('client-option')
+                ? 'var(--verde-principal)'
+                : 'var(--admin-azul)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            selectionIndicator.style.display = 'none';
+        });
+    });
+    
+    // Efecto de clic en botones
+    [clientBtn, adminBtn].forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            // Crear efecto de ripple
+            const ripple = document.createElement('span');
+            const rect = this.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            const x = e.clientX - rect.left - size / 2;
+            const y = e.clientY - rect.top - size / 2;
+            
+            ripple.style.cssText = `
+                position: absolute;
+                border-radius: 50%;
+                background: rgba(255, 255, 255, 0.7);
+                transform: scale(0);
+                animation: ripple-animation 0.6s linear;
+                width: ${size}px;
+                height: ${size}px;
+                top: ${y}px;
+                left: ${x}px;
+                pointer-events: none;
+            `;
+            
+            this.appendChild(ripple);
+            
+            // Remover después de la animación
+            setTimeout(() => {
+                ripple.remove();
+            }, 600);
+            
+            // Mostrar mensaje de carga
+            const originalText = this.innerHTML;
+            this.innerHTML = '<span class="loading-text">Redirigiendo...</span>';
+            this.style.pointerEvents = 'none';
+            
+            // Restaurar después de 1.5 segundos (en caso de que no se redirija)
+            setTimeout(() => {
+                this.innerHTML = originalText;
+                this.style.pointerEvents = 'auto';
+            }, 1500);
+        });
+    });
+    
+    // Animación de ripple
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes ripple-animation {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // Detección de dispositivo
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+        // Adaptaciones para móvil
+        document.querySelector('.options-grid').style.gap = '15px';
+        document.querySelectorAll('.option-card').forEach(card => {
+            card.style.padding = '20px 15px';
+        });
+    }
+    
+    // Efecto de entrada escalonada
+    const cards = document.querySelectorAll('.option-card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+            card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 200);
+    });
+    
+    // Contador de visitas (localStorage)
+    let visitCount = localStorage.getItem('login_selector_visits') || 0;
+    visitCount = parseInt(visitCount) + 1;
+    localStorage.setItem('login_selector_visits', visitCount);
+    
+    console.log(`🔐 Selector de login cargado`);
+    console.log(`   - Visitas: ${visitCount}`);
+    console.log(`   - Dispositivo: ${isMobile ? 'Móvil' : 'Escritorio'}`);
+    
+    // Mostrar badge de recomendación en la primera visita
+    if (visitCount === 1) {
+        const recommendationBadge = document.createElement('div');
+        recommendationBadge.className = 'recommendation-badge';
+        recommendationBadge.textContent = '⭐ Recomendado';
+        recommendationBadge.style.display = 'block';
+        
+        // Agregar badge a la opción de cliente
+        clientCard.appendChild(recommendationBadge);
+        
+        // Remover después de 5 segundos
+        setTimeout(() => {
+            recommendationBadge.style.opacity = '0';
+            recommendationBadge.style.transition = 'opacity 0.5s ease';
+            setTimeout(() => {
+                if (recommendationBadge.parentNode) {
+                    recommendationBadge.remove();
+                }
+            }, 500);
+        }, 5000);
+    }
+    
+    // Efecto de sonido al pasar por las opciones (opcional, silenciado)
+    const hoverSound = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==');
+    hoverSound.volume = 0;
+    
+    cards.forEach(card => {
+        card.addEventListener('mouseenter', () => {
+            hoverSound.currentTime = 0;
+            hoverSound.play().catch(() => {});
+        });
+    });
+});
+</script>
+{% endblock %}

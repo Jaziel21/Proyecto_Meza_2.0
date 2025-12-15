@@ -1,0 +1,1054 @@
+<!-- app_Libreria/templates/admin/ventas/detalle.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="admin-header">
+        <h1 class="page-title">Detalle de Venta #{{ venta.ventaid }}</h1>
+        <a href="{% url 'admin_ventas' %}" class="btn btn-secondary">
+            <span class="btn-icon">←</span> Volver a Ventas
+        </a>
+    </div>
+    
+    <div class="detail-grid">
+        <!-- Resumen de la Compra -->
+        <div class="detail-main">
+            <div class="section-card">
+                <div class="section-header section-success">
+                    <span class="section-icon">💰</span>
+                    <h3>Resumen de la Compra</h3>
+                </div>
+                <div class="section-content">
+                    {% if venta.detalles.all %}
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Libro</th>
+                                    <th>Cantidad</th>
+                                    <th>Precio Unitario</th>
+                                    <th>Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for detalle in venta.detalles.all %}
+                                <tr class="table-row">
+                                    <td class="cell-product">
+                                        <strong class="product-title">{{ detalle.libroid.titulo }}</strong><br>
+                                        <span class="product-author">
+                                            por {{ detalle.libroid.autorid.nombre }} {{ detalle.libroid.autorid.apellido }}
+                                        </span>
+                                    </td>
+                                    <td class="cell-quantity">
+                                        <span class="quantity-badge">{{ detalle.cantidad }}</span>
+                                    </td>
+                                    <td class="cell-price">
+                                        <span class="price">${{ detalle.preciounitario }}</span>
+                                    </td>
+                                    <td class="cell-subtotal">
+                                        <strong class="subtotal">${{ detalle.subtotal }}</strong>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-total">
+                                    <td colspan="3" class="total-label">Subtotal:</td>
+                                    <td class="total-value">${{ venta.montototal }}</td>
+                                </tr>
+                                {% if venta.descuentoaplicado and venta.descuentoaplicado > 0 %}
+                                <tr class="table-discount">
+                                    <td colspan="3" class="total-label">Descuento:</td>
+                                    <td class="discount-value">- ${{ venta.descuentoaplicado }}</td>
+                                </tr>
+                                {% endif %}
+                                <tr class="table-grand-total">
+                                    <td colspan="3" class="total-label">Total Venta:</td>
+                                    <td class="grand-total">${{ venta.montototal }}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <div class="empty-icon">⚠️</div>
+                        <h4>No hay detalles registrados para esta venta</h4>
+                        <p>Esta venta no tiene productos asociados.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Información de la Venta -->
+        <div class="detail-sidebar">
+            <div class="section-card">
+                <div class="section-header section-primary">
+                    <span class="section-icon">📋</span>
+                    <h3>Información de la Venta</h3>
+                </div>
+                <div class="section-content">
+                    <div class="info-list">
+                        <div class="info-item">
+                            <div class="info-label">ID Venta:</div>
+                            <div class="info-value">#{{ venta.ventaid }}</div>
+                        </div>
+                        
+                        <div class="info-item">
+                            <div class="info-label">Cliente:</div>
+                            <div class="info-value">{{ venta.clienteid.username }}</div>
+                        </div>
+                        
+                        <div class="info-item">
+                            <div class="info-label">Fecha:</div>
+                            <div class="info-value">{{ venta.fechaventa|date:"d M Y H:i" }}</div>
+                        </div>
+                        
+                        <div class="info-item">
+                            <div class="info-label">Método de Pago:</div>
+                            <div class="info-value">
+                                <span class="status-badge payment-{{ venta.metodopago|lower }}">
+                                    {{ venta.get_metodopago_display }}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="info-item">
+                            <div class="info-label">Estado:</div>
+                            <div class="info-value">
+                                <span class="status-badge status-{{ venta.estadoventa|lower }}">
+                                    {{ venta.get_estadoventa_display }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="divider"></div>
+                    
+                    <div class="total-summary">
+                        <div class="total-item">
+                            <div class="total-label">Total Venta:</div>
+                            <div class="total-amount">${{ venta.montototal }}</div>
+                        </div>
+                        
+                        {% if venta.descuentoaplicado and venta.descuentoaplicado > 0 %}
+                        <div class="total-item">
+                            <div class="total-label">Descuento:</div>
+                            <div class="discount-amount">- ${{ venta.descuentoaplicado }}</div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if venta.metodopago == 'EFECTIVO' %}
+                        <div class="total-item">
+                            <div class="total-label">Pago Recibido:</div>
+                            <div class="payment-amount">${{ venta.pagorecibido }}</div>
+                        </div>
+                        
+                        <div class="total-item">
+                            <div class="total-label">Cambio:</div>
+                            <div class="change-amount">${{ venta.cambio }}</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Acciones -->
+            {% if venta.estadoventa == 'COMPLETADA' %}
+            <div class="section-card">
+                <div class="section-header section-warning">
+                    <span class="section-icon">⚡</span>
+                    <h3>Acciones</h3>
+                </div>
+                <div class="section-content">
+                    <form method="post" action="{% url 'cancelar_venta' venta.ventaid %}" class="action-form">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger btn-block" id="cancel-btn">
+                            <span class="btn-icon">❌</span> Cancelar Venta
+                        </button>
+                    </form>
+                    <div class="action-spacing">
+                        <a href="{% url 'editar_venta' venta.ventaid %}" class="btn btn-outline-warning btn-block">
+                            <span class="btn-icon">✏️</span> Editar Venta
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Estadísticas Rápidas -->
+            <div class="section-card">
+                <div class="section-header section-info">
+                    <span class="section-icon">📊</span>
+                    <h3>Estadísticas</h3>
+                </div>
+                <div class="section-content">
+                    <div class="stat-card">
+                        <div class="stat-number">{{ venta.detalles.count }}</div>
+                        <div class="stat-label">Productos Vendidos</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Variables CSS */
+:root {
+    --verde-principal: #2e8b57;
+    --verde-claro: rgba(46, 139, 87, 0.1);
+    --blanco: #ffffff;
+    --gris-claro: #f8f9fa;
+    --gris-medio: #e9ecef;
+    --gris-oscuro: #343a40;
+    --texto: #212529;
+    --texto-secundario: #6c757d;
+    --primario: #2e8b57;
+    --secundario: #28a745;
+    --peligro: #dc3545;
+    --advertencia: #ffc107;
+    --info: #17a2b8;
+    --success: #28a745;
+    --warning: #ffc107;
+    --sombra: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --sombra-hover: 0 4px 8px rgba(0, 0, 0, 0.15);
+    --radio-borde: 8px;
+    --radio-input: 6px;
+}
+
+/* Contenedor principal */
+.admin-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Encabezado */
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.page-title {
+    color: var(--verde-principal);
+    font-size: 28px;
+    margin: 0;
+}
+
+/* Botones */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 12px 25px;
+    border-radius: var(--radio-input);
+    text-decoration: none;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.3s ease;
+    font-size: 15px;
+    gap: 8px;
+}
+
+.btn-secondary {
+    background: linear-gradient(135deg, var(--gris-medio), #dae0e5);
+    color: var(--texto);
+}
+
+.btn-secondary:hover {
+    background: linear-gradient(135deg, var(--gris-oscuro), #495057);
+    color: var(--blanco);
+    transform: translateY(-2px);
+}
+
+.btn-icon {
+    font-size: 16px;
+}
+
+/* Grid de detalle */
+.detail-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 25px;
+}
+
+.detail-main, .detail-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+}
+
+/* Section cards */
+.section-card {
+    background: var(--blanco);
+    border-radius: var(--radio-borde);
+    border: 2px solid var(--gris-medio);
+    overflow: hidden;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 18px 25px;
+    background-color: var(--gris-claro);
+    border-bottom: 2px solid var(--gris-medio);
+}
+
+.section-header.section-success {
+    background: linear-gradient(135deg, var(--success), #5cb85c);
+    color: white;
+    border-bottom-color: #4cae4c;
+}
+
+.section-header.section-primary {
+    background: linear-gradient(135deg, var(--primario), #3cb371);
+    color: white;
+    border-bottom-color: #2e8b57;
+}
+
+.section-header.section-warning {
+    background: linear-gradient(135deg, var(--warning), #f0ad4e);
+    color: #212529;
+    border-bottom-color: #eea236;
+}
+
+.section-header.section-info {
+    background: linear-gradient(135deg, var(--info), #5bc0de);
+    color: white;
+    border-bottom-color: #46b8da;
+}
+
+.section-icon {
+    font-size: 20px;
+}
+
+.section-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.section-content {
+    padding: 25px;
+}
+
+/* Tabla de detalles */
+.table-wrapper {
+    overflow-x: auto;
+    border-radius: var(--radio-input);
+    border: 1px solid var(--gris-medio);
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 600px;
+}
+
+.data-table th {
+    padding: 16px;
+    text-align: left;
+    background-color: var(--verde-principal);
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid var(--verde-principal);
+}
+
+.data-table td {
+    padding: 16px;
+    border-bottom: 1px solid var(--gris-medio);
+    vertical-align: top;
+}
+
+.data-table tfoot td {
+    padding: 20px 16px;
+    font-weight: 600;
+    font-size: 16px;
+}
+
+.table-row:hover {
+    background-color: var(--verde-claro);
+}
+
+/* Celdas específicas */
+.cell-product {
+    min-width: 250px;
+}
+
+.product-title {
+    display: block;
+    color: var(--texto);
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.product-author {
+    color: var(--texto-secundario);
+    font-size: 13px;
+}
+
+.cell-quantity {
+    text-align: center;
+}
+
+.quantity-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    background-color: var(--gris-claro);
+    border-radius: 20px;
+    font-weight: 600;
+    min-width: 40px;
+    text-align: center;
+}
+
+.cell-price {
+    text-align: right;
+    font-weight: 500;
+    color: var(--texto);
+}
+
+.cell-subtotal {
+    text-align: right;
+    font-weight: 600;
+}
+
+.subtotal {
+    color: var(--texto);
+    font-size: 16px;
+}
+
+/* Totales en tabla */
+.table-total {
+    background-color: var(--gris-claro);
+}
+
+.table-discount {
+    background-color: rgba(255, 193, 7, 0.1);
+}
+
+.table-grand-total {
+    background-color: rgba(40, 167, 69, 0.1);
+}
+
+.total-label {
+    text-align: right;
+    color: var(--texto);
+    font-size: 15px;
+}
+
+.total-value {
+    text-align: right;
+    color: var(--texto);
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.discount-value {
+    text-align: right;
+    color: var(--peligro);
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.grand-total {
+    text-align: right;
+    color: var(--success);
+    font-size: 18px;
+    font-weight: 700;
+}
+
+/* Estado vacío */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.empty-icon {
+    font-size: 48px;
+    margin-bottom: 20px;
+    opacity: 0.3;
+}
+
+.empty-state h4 {
+    color: var(--texto);
+    margin-bottom: 10px;
+    font-size: 18px;
+}
+
+.empty-state p {
+    color: var(--texto-secundario);
+    margin-bottom: 0;
+}
+
+/* Lista de información */
+.info-list {
+    margin-bottom: 20px;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--gris-medio);
+}
+
+.info-item:last-child {
+    border-bottom: none;
+}
+
+.info-label {
+    font-weight: 600;
+    color: var(--texto);
+    font-size: 14px;
+}
+
+.info-value {
+    color: var(--texto);
+    font-size: 15px;
+    text-align: right;
+}
+
+/* Status badges */
+.status-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.payment-efectivo {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.payment-tarjeta {
+    background-color: #cce5ff;
+    color: #004085;
+}
+
+.payment-transferencia {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+.status-completada {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-cancelada {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.status-pendiente {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+/* Divider */
+.divider {
+    height: 1px;
+    background-color: var(--gris-medio);
+    margin: 20px 0;
+}
+
+/* Resumen de totales */
+.total-summary {
+    background-color: var(--gris-claro);
+    border-radius: var(--radio-input);
+    padding: 20px;
+}
+
+.total-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.total-item:last-child {
+    margin-bottom: 0;
+}
+
+.total-label {
+    font-weight: 600;
+    color: var(--texto);
+    font-size: 14px;
+}
+
+.total-amount {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--success);
+}
+
+.discount-amount {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--peligro);
+}
+
+.payment-amount {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--info);
+}
+
+.change-amount {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--warning);
+}
+
+/* Botones de acción */
+.action-form {
+    margin-bottom: 15px;
+}
+
+.btn-block {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, var(--peligro), #c82333);
+    color: white;
+    box-shadow: 0 4px 6px rgba(220, 53, 69, 0.2);
+}
+
+.btn-danger:hover {
+    background: linear-gradient(135deg, #c82333, #bd2130);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(220, 53, 69, 0.3);
+}
+
+.btn-outline-warning {
+    background-color: transparent;
+    border: 2px solid var(--warning);
+    color: var(--warning);
+}
+
+.btn-outline-warning:hover {
+    background-color: var(--warning);
+    color: white;
+    transform: translateY(-2px);
+}
+
+.action-spacing {
+    margin-top: 10px;
+}
+
+/* Estadísticas */
+.stat-card {
+    text-align: center;
+    padding: 20px;
+    background: linear-gradient(135deg, var(--info), #5bc0de);
+    border-radius: var(--radio-input);
+    color: white;
+}
+
+.stat-number {
+    font-size: 42px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.stat-label {
+    font-size: 14px;
+    opacity: 0.9;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Modal de confirmación */
+.confirm-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.3s ease;
+}
+
+.confirm-dialog {
+    background: var(--blanco);
+    border-radius: var(--radio-borde);
+    padding: 40px;
+    max-width: 500px;
+    width: 90%;
+    text-align: center;
+    animation: scaleIn 0.3s ease;
+    box-shadow: var(--sombra-hover);
+}
+
+.confirm-icon {
+    font-size: 64px;
+    margin-bottom: 20px;
+    color: var(--peligro);
+}
+
+.confirm-title {
+    color: var(--texto);
+    margin-bottom: 15px;
+    font-size: 20px;
+}
+
+.confirm-message {
+    color: var(--texto-secundario);
+    margin-bottom: 30px;
+    line-height: 1.6;
+    font-size: 15px;
+}
+
+.confirm-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+.confirm-btn {
+    padding: 12px 30px;
+    border-radius: var(--radio-input);
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.3s ease;
+    font-size: 16px;
+    min-width: 120px;
+}
+
+.confirm-btn-danger {
+    background: linear-gradient(135deg, var(--peligro), #c82333);
+    color: white;
+}
+
+.confirm-btn-danger:hover {
+    background: linear-gradient(135deg, #c82333, #bd2130);
+    transform: translateY(-2px);
+}
+
+.confirm-btn-secondary {
+    background: linear-gradient(135deg, var(--gris-medio), #dae0e5);
+    color: var(--texto);
+}
+
+.confirm-btn-secondary:hover {
+    background: linear-gradient(135deg, var(--gris-oscuro), #495057);
+    color: var(--blanco);
+    transform: translateY(-2px);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+    .detail-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+}
+
+@media (max-width: 768px) {
+    .admin-container {
+        padding: 15px;
+    }
+    
+    .admin-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .page-title {
+        font-size: 24px;
+    }
+    
+    .btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .section-content {
+        padding: 20px;
+    }
+    
+    .data-table {
+        font-size: 14px;
+    }
+    
+    .data-table th,
+    .data-table td {
+        padding: 12px 8px;
+    }
+    
+    .info-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+    
+    .info-value {
+        text-align: left;
+    }
+    
+    .confirm-actions {
+        flex-direction: column;
+    }
+    
+    .confirm-btn {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .page-title {
+        font-size: 22px;
+    }
+    
+    .section-header {
+        padding: 15px 20px;
+    }
+    
+    .section-header h3 {
+        font-size: 16px;
+    }
+    
+    .stat-number {
+        font-size: 36px;
+    }
+    
+    .total-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+    
+    .total-amount,
+    .discount-amount,
+    .payment-amount,
+    .change-amount {
+        text-align: left;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const cancelBtn = document.getElementById('cancel-btn');
+    const actionForm = document.querySelector('.action-form');
+    
+    // Información de debug
+    console.log('📊 Detalle de venta:', {
+        id: {{ venta.ventaid }},
+        cliente: '{{ venta.clienteid.username }}',
+        total: '${{ venta.montototal }}',
+        estado: '{{ venta.estadoventa }}',
+        productos: {{ venta.detalles.count }}
+    });
+    
+    // Confirmación mejorada para cancelar venta
+    if (cancelBtn && actionForm) {
+        cancelBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Crear modal de confirmación
+            const modal = document.createElement('div');
+            modal.className = 'confirm-modal';
+            
+            const dialog = document.createElement('div');
+            dialog.className = 'confirm-dialog';
+            
+            dialog.innerHTML = `
+                <div class="confirm-icon">⚠️</div>
+                <h3 class="confirm-title">¿Cancelar venta #{{ venta.ventaid }}?</h3>
+                <p class="confirm-message">
+                    Estás a punto de cancelar la venta de <strong>{{ venta.clienteid.username }}</strong> 
+                    por un total de <strong class="text-danger">${{ venta.montototal }}</strong>.
+                    <br><br>
+                    <strong>⚠️ CONSECUENCIAS:</strong><br>
+                    • Se restaurará el stock de los libros vendidos<br>
+                    • La venta cambiará a estado "CANCELADA"<br>
+                    • Esta acción <strong>no se puede deshacer</strong>
+                    <br><br>
+                    ¿Estás seguro de continuar?
+                </p>
+                <div class="confirm-actions">
+                    <button type="button" id="confirm-cancel" class="confirm-btn confirm-btn-danger">
+                        Sí, cancelar venta
+                    </button>
+                    <button type="button" id="cancel-action" class="confirm-btn confirm-btn-secondary">
+                        No, mantener venta
+                    </button>
+                </div>
+            `;
+            
+            modal.appendChild(dialog);
+            document.body.appendChild(modal);
+            
+            // Deshabilitar scroll del body
+            document.body.style.overflow = 'hidden';
+            
+            // Confirmar cancelación
+            document.getElementById('confirm-cancel').addEventListener('click', function() {
+                // Mostrar animación de carga
+                cancelBtn.innerHTML = '<span class="btn-icon">⏳</span> Cancelando...';
+                cancelBtn.disabled = true;
+                
+                // Enviar formulario después de breve pausa
+                setTimeout(() => {
+                    actionForm.submit();
+                }, 500);
+            });
+            
+            // Cancelar acción
+            document.getElementById('cancel-action').addEventListener('click', function() {
+                document.body.removeChild(modal);
+                document.body.style.overflow = '';
+            });
+            
+            // Cerrar al hacer clic fuera del diálogo
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    document.body.removeChild(modal);
+                    document.body.style.overflow = '';
+                }
+            });
+            
+            // Cerrar con tecla Escape
+            document.addEventListener('keydown', function closeOnEscape(e) {
+                if (e.key === 'Escape') {
+                    document.body.removeChild(modal);
+                    document.body.style.overflow = '';
+                    document.removeEventListener('keydown', closeOnEscape);
+                }
+            });
+        });
+    }
+    
+    // Animación para filas de la tabla
+    const tableRows = document.querySelectorAll('.table-row');
+    tableRows.forEach(row => {
+        row.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateX(5px)';
+            this.style.transition = 'all 0.2s ease';
+        });
+        
+        row.addEventListener('mouseleave', function() {
+            this.style.transform = '';
+        });
+    });
+    
+    // Efecto hover para items de información
+    const infoItems = document.querySelectorAll('.info-item');
+    infoItems.forEach(item => {
+        item.addEventListener('mouseenter', function() {
+            this.style.backgroundColor = 'var(--gris-claro)';
+            this.style.paddingLeft = '15px';
+            this.style.paddingRight = '15px';
+            this.style.marginLeft = '-15px';
+            this.style.marginRight = '-15px';
+            this.style.borderRadius = 'var(--radio-input)';
+            this.style.transition = 'all 0.2s ease';
+        });
+        
+        item.addEventListener('mouseleave', function() {
+            this.style.backgroundColor = '';
+            this.style.paddingLeft = '';
+            this.style.paddingRight = '';
+            this.style.marginLeft = '';
+            this.style.marginRight = '';
+            this.style.borderRadius = '';
+        });
+    });
+    
+    // Calcular estadísticas adicionales
+    function calcularEstadisticas() {
+        const detalles = {{ venta.detalles.count }};
+        const total = parseFloat('{{ venta.montototal }}');
+        
+        if (detalles > 0) {
+            const promedioPorProducto = total / detalles;
+            
+            console.log('📈 Estadísticas adicionales:');
+            console.log('   - Total productos:', detalles);
+            console.log('   - Total venta: $' + total.toFixed(2));
+            console.log('   - Promedio por producto: $' + promedioPorProducto.toFixed(2));
+            
+            // Mostrar información adicional si hay espacio
+            const statContainer = document.querySelector('.stat-card');
+            if (statContainer) {
+                const promedioElement = document.createElement('div');
+                promedioElement.className = 'stat-average';
+                promedioElement.style.cssText = `
+                    margin-top: 10px;
+                    font-size: 13px;
+                    opacity: 0.8;
+                `;
+                promedioElement.textContent = `Promedio: $${promedioPorProducto.toFixed(2)}`;
+                statContainer.appendChild(promedioElement);
+            }
+        }
+    }
+    
+    // Calcular estadísticas después de cargar
+    setTimeout(calcularEstadisticas, 100);
+    
+    // Función para imprimir recibo (opcional)
+    const printBtn = document.createElement('button');
+    printBtn.className = 'btn btn-outline-primary';
+    printBtn.style.marginTop = '15px';
+    printBtn.innerHTML = '<span class="btn-icon">🖨️</span> Imprimir Recibo';
+    
+    printBtn.addEventListener('click', function() {
+        window.print();
+    });
+    
+    // Agregar botón de impresión si hay detalles
+    const actionFormContainer = document.querySelector('.action-form');
+    if (actionFormContainer && {{ venta.detalles.count }} > 0) {
+        actionFormContainer.parentNode.insertBefore(printBtn, actionFormContainer.nextSibling);
+    }
+    
+    // Mostrar mensaje informativo
+    console.log('💡 Tips:');
+    console.log('   - Puedes hacer clic en las filas para ver más detalles');
+    console.log('   - Usa el botón de impresión para generar un recibo');
+    console.log('   - La cancelación restaurará el stock automáticamente');
+});
+</script>
+{% endblock %}

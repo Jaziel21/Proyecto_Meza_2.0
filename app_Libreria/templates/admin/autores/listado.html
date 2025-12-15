@@ -1,0 +1,738 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="admin-header">
+        <h1 class="page-title">Gestión de Autores</h1>
+        <div class="header-actions">
+            <a href="{% url 'agregar_autor' %}" class="btn btn-primary">
+                <span class="btn-icon">➕</span> Agregar Autor
+            </a>
+        </div>
+    </div>
+    
+    {% if messages %}
+    <div class="messages-container">
+        {% for message in messages %}
+        <div class="alert alert-success">
+            <span>{{ message }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <div class="card">
+        <div class="card-content">
+            <!-- Barra de búsqueda -->
+            <div class="search-box">
+                <input type="text" id="search-input" placeholder="🔍 Buscar autor por nombre, apellido, nacionalidad..." class="search-input">
+                <button type="button" id="clear-search" class="btn-clear" style="display: none;">×</button>
+            </div>
+            
+            <!-- Tabla de autores -->
+            <div class="table-wrapper">
+                <table class="data-table" id="autores-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre Completo</th>
+                            <th>Nacionalidad</th>
+                            <th>Fecha Nacimiento</th>
+                            <th>Edad</th>
+                            <th>Biografía</th>
+                            <th>Sitio Web</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for autor in autores %}
+                        <tr class="table-row">
+                            <td class="cell-id"><strong>#{{ autor.autorid }}</strong></td>
+                            <td class="cell-name">
+                                <div class="author-info">
+                                    <strong class="author-name">{{ autor.nombre }} {{ autor.apellido }}</strong>
+                                </div>
+                            </td>
+                            <td class="cell-nationality">
+                                <span class="country-name">{{ autor.nacionalidad }}</span>
+                            </td>
+                            <td class="cell-birthdate">
+                                <span class="date-value">{{ autor.fechanacimiento }}</span>
+                            </td>
+                            <td class="cell-age">
+                                <span class="age-badge">{{ autor.edad }} años</span>
+                            </td>
+                            <td class="cell-bio">
+                                <div class="bio-preview">{{ autor.bibliografia|truncatewords:20 }}</div>
+                            </td>
+                            <td class="cell-website">
+                                {% if autor.paginaweb %}
+                                <a href="{{ autor.paginaweb }}" target="_blank" class="website-link">
+                                    <span class="link-text">Visitar</span>
+                                </a>
+                                {% else %}
+                                <span class="no-website">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="cell-actions">
+                                <div class="action-buttons">
+                                    <a href="{% url 'editar_autor' autor.autorid %}" class="btn-action btn-edit">
+                                        <span class="action-icon">✏️</span>
+                                        <span class="action-text">Editar</span>
+                                    </a>
+                                    <a href="{% url 'eliminar_autor' autor.autorid %}" class="btn-action btn-delete">
+                                        <span class="action-icon">🗑️</span>
+                                        <span class="action-text">Eliminar</span>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="empty-state">
+                                <div class="empty-content">
+                                    <div class="empty-icon">✍️</div>
+                                    <h3>No hay autores registrados</h3>
+                                    <p>Comienza agregando el primer autor a tu catálogo.</p>
+                                    <a href="{% url 'agregar_autor' %}" class="btn btn-primary">Agregar Primer Autor</a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Estadísticas simples -->
+            {% if autores %}
+            <div class="simple-stats">
+                <div class="stat-item">
+                    <span class="stat-label">Total Autores:</span>
+                    <span class="stat-value">{{ autores.count }}</span>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+/* Variables CSS */
+:root {
+    --verde-principal: #2e8b57;
+    --verde-claro: rgba(46, 139, 87, 0.1);
+    --blanco: #ffffff;
+    --gris-claro: #f8f9fa;
+    --gris-medio: #e9ecef;
+    --gris-oscuro: #343a40;
+    --texto: #212529;
+    --texto-secundario: #6c757d;
+    --primario: #2e8b57;
+    --secundario: #28a745;
+    --peligro: #dc3545;
+    --advertencia: #ffc107;
+    --sombra: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --sombra-hover: 0 4px 8px rgba(0, 0, 0, 0.15);
+    --radio-borde: 8px;
+    --radio-input: 6px;
+}
+
+/* Contenedor principal */
+.admin-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Encabezado */
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.page-title {
+    color: var(--verde-principal);
+    font-size: 28px;
+    margin: 0;
+}
+
+.header-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+/* Botones */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 12px 25px;
+    border-radius: var(--radio-input);
+    text-decoration: none;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.3s ease;
+    font-size: 15px;
+    gap: 8px;
+}
+
+.btn-primary {
+    background-color: var(--verde-principal);
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #247449;
+    transform: translateY(-2px);
+    box-shadow: var(--sombra-hover);
+}
+
+.btn-icon {
+    font-size: 16px;
+}
+
+/* Barra de búsqueda */
+.search-box {
+    position: relative;
+    margin-bottom: 25px;
+}
+
+.search-input {
+    width: 100%;
+    padding: 12px 40px 12px 15px;
+    border: 2px solid var(--gris-medio);
+    border-radius: var(--radio-input);
+    font-size: 15px;
+    transition: all 0.3s ease;
+    background: var(--blanco);
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--verde-principal);
+    box-shadow: 0 0 0 3px rgba(46, 139, 87, 0.15);
+}
+
+.btn-clear {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: var(--texto-secundario);
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-clear:hover {
+    color: var(--peligro);
+    background: var(--gris-claro);
+    border-radius: 50%;
+}
+
+/* Alertas */
+.messages-container {
+    margin-bottom: 20px;
+}
+
+.alert {
+    padding: 15px 20px;
+    border-radius: var(--radio-borde);
+    margin-bottom: 10px;
+    animation: slideIn 0.3s ease;
+}
+
+.alert-success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Card */
+.card {
+    background: var(--blanco);
+    border-radius: var(--radio-borde);
+    box-shadow: var(--sombra);
+    overflow: hidden;
+}
+
+.card-content {
+    padding: 25px;
+}
+
+/* Tabla */
+.table-wrapper {
+    overflow-x: auto;
+    border-radius: var(--radio-borde);
+    border: 1px solid var(--gris-medio);
+    margin-bottom: 25px;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1000px;
+}
+
+.data-table thead {
+    background-color: var(--verde-principal);
+}
+
+.data-table th {
+    padding: 16px;
+    text-align: left;
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid var(--verde-principal);
+}
+
+.data-table td {
+    padding: 16px;
+    border-bottom: 1px solid var(--gris-medio);
+    vertical-align: top;
+}
+
+.table-row:hover {
+    background-color: var(--verde-claro);
+    transition: background-color 0.2s ease;
+}
+
+/* Celdas específicas */
+.cell-id {
+    font-weight: 600;
+    color: var(--verde-principal);
+    font-size: 14px;
+    text-align: center;
+    width: 70px;
+}
+
+.cell-name {
+    min-width: 180px;
+}
+
+.author-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.author-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--texto);
+}
+
+.cell-nationality {
+    width: 120px;
+}
+
+.country-name {
+    font-weight: 500;
+    color: var(--texto);
+    font-size: 14px;
+}
+
+.cell-birthdate {
+    width: 130px;
+}
+
+.date-value {
+    display: block;
+    font-weight: 500;
+    color: var(--texto);
+    font-size: 14px;
+}
+
+.cell-age {
+    width: 100px;
+    text-align: center;
+}
+
+.age-badge {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    background: var(--gris-claro);
+    color: var(--texto);
+    text-align: center;
+    min-width: 70px;
+}
+
+.cell-bio {
+    min-width: 200px;
+    max-width: 300px;
+}
+
+.bio-preview {
+    color: var(--texto);
+    font-size: 14px;
+    line-height: 1.5;
+    max-height: 42px;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.cell-website {
+    width: 100px;
+    text-align: center;
+}
+
+.website-link {
+    display: inline-block;
+    color: var(--verde-principal);
+    text-decoration: none;
+    font-size: 14px;
+    padding: 6px 12px;
+    border-radius: 4px;
+    border: 1px solid var(--verde-claro);
+    background: var(--verde-claro);
+    transition: all 0.2s ease;
+}
+
+.website-link:hover {
+    background: var(--verde-principal);
+    color: white;
+    border-color: var(--verde-principal);
+}
+
+.no-website {
+    color: var(--texto-secundario);
+    font-style: italic;
+    font-size: 13px;
+}
+
+/* Botones de acción */
+.cell-actions {
+    width: 150px;
+}
+
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.btn-action {
+    padding: 8px 12px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 13px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid transparent;
+    justify-content: flex-start;
+    cursor: pointer;
+    background: var(--blanco);
+}
+
+.btn-action:hover {
+    transform: translateX(3px);
+}
+
+.btn-edit {
+    border-color: var(--advertencia);
+    color: var(--advertencia);
+}
+
+.btn-edit:hover {
+    background-color: var(--advertencia);
+    color: white;
+}
+
+.btn-delete {
+    border-color: var(--peligro);
+    color: var(--peligro);
+}
+
+.btn-delete:hover {
+    background-color: var(--peligro);
+    color: white;
+}
+
+.action-icon {
+    font-size: 14px;
+}
+
+.action-text {
+    font-weight: 500;
+}
+
+/* Estado vacío */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px !important;
+}
+
+.empty-content {
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.empty-icon {
+    font-size: 64px;
+    margin-bottom: 20px;
+    opacity: 0.3;
+}
+
+.empty-content h3 {
+    color: var(--texto);
+    margin-bottom: 10px;
+    font-size: 20px;
+}
+
+.empty-content p {
+    color: var(--texto-secundario);
+    margin-bottom: 25px;
+    font-size: 15px;
+}
+
+/* Estadísticas simples */
+.simple-stats {
+    display: flex;
+    gap: 30px;
+    padding: 20px;
+    background: var(--gris-claro);
+    border-radius: var(--radio-borde);
+    border: 1px solid var(--gris-medio);
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.stat-label {
+    font-size: 14px;
+    color: var(--texto-secundario);
+    font-weight: 500;
+}
+
+.stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--verde-principal);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .admin-container {
+        padding: 15px;
+    }
+    
+    .admin-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .page-title {
+        font-size: 24px;
+    }
+    
+    .header-actions {
+        width: 100%;
+    }
+    
+    .btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .card-content {
+        padding: 20px;
+    }
+    
+    .data-table {
+        min-width: 800px;
+    }
+    
+    .data-table th,
+    .data-table td {
+        padding: 12px 8px;
+    }
+    
+    .action-buttons {
+        min-width: 120px;
+    }
+    
+    .btn-action {
+        font-size: 12px;
+        padding: 6px 8px;
+    }
+    
+    .simple-stats {
+        flex-direction: column;
+        gap: 15px;
+        padding: 15px;
+    }
+    
+    .empty-icon {
+        font-size: 48px;
+    }
+}
+
+@media (max-width: 480px) {
+    .page-title {
+        font-size: 22px;
+    }
+    
+    .empty-icon {
+        font-size: 40px;
+    }
+    
+    .stat-value {
+        font-size: 20px;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tabla = document.getElementById('autores-table');
+    const filas = document.querySelectorAll('.table-row');
+    const searchInput = document.getElementById('search-input');
+    const clearSearch = document.getElementById('clear-search');
+    
+    // Mostrar/ocultar botón de limpiar búsqueda
+    searchInput.addEventListener('input', function() {
+        clearSearch.style.display = this.value ? 'block' : 'none';
+        filtrarTabla();
+    });
+    
+    clearSearch.addEventListener('click', function() {
+        searchInput.value = '';
+        this.style.display = 'none';
+        filtrarTabla();
+    });
+    
+    // Función de filtrado
+    function filtrarTabla() {
+        const searchTerm = searchInput.value.toLowerCase();
+        
+        filas.forEach(fila => {
+            const textoFila = fila.textContent.toLowerCase();
+            const mostrar = searchTerm ? textoFila.includes(searchTerm) : true;
+            fila.style.display = mostrar ? '' : 'none';
+        });
+    }
+    
+    // Confirmación para eliminar
+    document.querySelectorAll('.btn-delete').forEach(boton => {
+        boton.addEventListener('click', function(e) {
+            if (!confirm('¿Estás seguro de que quieres eliminar este autor? Esta acción no se puede deshacer.')) {
+                e.preventDefault();
+            }
+        });
+    });
+    
+    // Efecto hover en filas
+    filas.forEach(fila => {
+        fila.addEventListener('mouseenter', function() {
+            this.style.backgroundColor = 'var(--verde-claro)';
+        });
+        
+        fila.addEventListener('mouseleave', function() {
+            this.style.backgroundColor = '';
+        });
+    });
+    
+    // Ordenamiento simple por columnas
+    const encabezados = tabla.querySelectorAll('th');
+    encabezados.forEach((encabezado, index) => {
+        if (index !== 5 && index !== 7) { // Excluir biografía y acciones
+            encabezado.style.cursor = 'pointer';
+            encabezado.title = 'Click para ordenar';
+            
+            encabezado.addEventListener('click', function() {
+                ordenarTabla(index);
+            });
+        }
+    });
+    
+    function ordenarTabla(columna) {
+        const tbody = tabla.querySelector('tbody');
+        const filasArray = Array.from(filas).filter(fila => fila.style.display !== 'none');
+        
+        filasArray.sort((a, b) => {
+            const valorA = obtenerValorCelda(a, columna);
+            const valorB = obtenerValorCelda(b, columna);
+            return compararValores(valorA, valorB);
+        });
+        
+        // Reordenar solo filas visibles
+        filasArray.forEach(fila => tbody.appendChild(fila));
+    }
+    
+    function obtenerValorCelda(fila, columna) {
+        const celdas = fila.cells;
+        switch(columna) {
+            case 0: // ID
+                return parseInt(celdas[0].querySelector('strong').textContent.replace('#', ''));
+            case 1: // Nombre
+                return celdas[1].querySelector('.author-name').textContent.toLowerCase();
+            case 2: // Nacionalidad
+                return celdas[2].querySelector('.country-name').textContent.toLowerCase();
+            case 3: // Fecha Nacimiento
+                return new Date(celdas[3].querySelector('.date-value').textContent);
+            case 4: // Edad
+                return parseInt(celdas[4].querySelector('.age-badge').textContent);
+            case 6: // Sitio Web
+                return celdas[6].textContent.toLowerCase();
+            default:
+                return celdas[columna].textContent.toLowerCase();
+        }
+    }
+    
+    function compararValores(a, b) {
+        if (a instanceof Date && b instanceof Date) {
+            return a - b;
+        }
+        if (typeof a === 'number' && typeof b === 'number') {
+            return a - b;
+        }
+        return String(a).localeCompare(String(b));
+    }
+    
+    // Contador de autores visibles
+    function actualizarContador() {
+        const filasVisibles = Array.from(filas).filter(fila => fila.style.display !== 'none').length;
+        console.log(`Autores visibles: ${filasVisibles} de ${filas.length}`);
+    }
+    
+    // Inicializar
+    actualizarContador();
+});
+</script>
+{% endblock %}
